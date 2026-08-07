@@ -1,0 +1,6 @@
+{
+  "name": "Internal Property Listing Generator",
+  "description": "Internal agency tool for generating mobile-first premium property listings with Gemini AI and shareable public pages.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

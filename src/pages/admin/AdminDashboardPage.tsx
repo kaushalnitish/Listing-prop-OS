@@ -16,7 +16,7 @@ import {
   Clock,
   Filter,
 } from 'lucide-react';
-import { getListings, saveListing, deleteListing, sampleListings } from '../../lib/storage';
+import { getListings, saveListing, deleteListing } from '../../lib/storage';
 import { PropertyListing } from '../../types';
 
 export const AdminDashboardPage: React.FC = () => {

@@ -336,15 +336,8 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
         updatedAt: new Date().toISOString(),
       };
 
-      console.log('[DEBUG PIPELINE 1] Object before saveListing call in UI:', JSON.parse(JSON.stringify(publishedListing)));
       const saved = await saveListing(publishedListing);
-
-      console.log('[DEBUG PIPELINE 2] Object returned from saveListing in UI:', JSON.parse(JSON.stringify(saved)));
-      console.log('[DEBUG PIPELINE 4] Slug returned:', saved.slug);
-      console.log('[DEBUG PIPELINE 8] Listing status returned:', saved.status);
-
       const url = `${window.location.origin}/p/${saved.slug}`;
-      console.log('[DEBUG PIPELINE 5] Exact generated URL being set for public view:', url);
 
       setPublishedUrl(url);
       setPreviewListing(saved);

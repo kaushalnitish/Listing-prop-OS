@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { PublicLayout } from '../../components/layout/PublicLayout';
-import { getListingBySlug, getListingById, sampleListings } from '../../lib/storage';
+import { getListingBySlug, getListingById } from '../../lib/storage';
 import { PropertyListing } from '../../types';
 
 import { HeroGallery } from '../../components/public/HeroGallery';
@@ -66,22 +66,11 @@ export const PublicListingPage: React.FC = () => {
     const fetchListing = async () => {
       let found: PropertyListing | null = null;
 
-      console.log(`[DEBUG PIPELINE 5 & 6] PublicListingPage mounted with params - slug: "${slug}", id: "${id}"`);
-
       if (id) {
-        console.log(`[DEBUG PIPELINE 6] Fetching by ID: "${id}"`);
         found = await getListingById(id);
       } else if (slug) {
-        console.log(`[DEBUG PIPELINE 6] Fetching by Slug: "${slug}"`);
         found = await getListingBySlug(slug);
       }
-
-      console.log(`[DEBUG PIPELINE 6 & 8] Result returned to PublicListingPage:`, found ? {
-        id: found.id,
-        title: found.title,
-        slug: found.slug,
-        status: found.status
-      } : 'NULL (NOT FOUND)');
 
       if (isMounted) {
         setListing(found);
@@ -111,13 +100,6 @@ export const PublicListingPage: React.FC = () => {
 
   // 404 Page if listing not found, or if accessed via public route and not published
   if (!listing || (!id && listing.status !== 'published')) {
-    console.warn(`[DEBUG PIPELINE 7 & 8] 404 CONDITION TRIGGERED!`, {
-      listingExists: !!listing,
-      listingStatus: listing?.status,
-      requestedSlug: slug,
-      requestedId: id,
-      reason: !listing ? 'Listing is NULL' : `Status is "${listing.status}" instead of "published"`
-    });
     return (
       <PublicLayout>
         <NotFoundListing requestedSlug={slug} />
@@ -125,14 +107,13 @@ export const PublicListingPage: React.FC = () => {
     );
   }
 
-  // Fallback default contact info if missing
   const contactInfo = listing.contact || {
-    agentName: 'Alexander Vance',
-    agentRole: 'Principal Director',
-    phone: '+1 (305) 890-4421',
-    whatsappNumber: '13058904421',
-    email: 'alexander@luminaryestates.com',
-    agencyName: 'Luminary Real Estate Group',
+    agentName: '',
+    agentRole: '',
+    phone: '',
+    whatsappNumber: '',
+    email: '',
+    agencyName: '',
   };
 
   return (

@@ -3,87 +3,8 @@ import { supabase, isSupabaseConfigured } from './supabase';
 
 const LOCAL_STORAGE_KEY = 'internal_property_listings';
 
-// Initial sample data for development and instant demonstration
-export const sampleListings: PropertyListing[] = [
-  {
-    id: 'sample-villa-1',
-    slug: 'the-grand-luminary-villa',
-    title: 'The Grand Luminary Villa',
-    tagline: 'Architectural Mastery Overlooking Coral Bay',
-    price: 4850000,
-    currency: '$',
-    specs: {
-      bedrooms: 5,
-      bathrooms: 6,
-      squareFeet: 7200,
-      propertyType: 'Estate Villa',
-      yearBuilt: 2024,
-      parkingSpaces: 4,
-    },
-    location: {
-      address: '1048 Ocean Horizon Way',
-      neighborhood: 'Coral Ridge Heights',
-      city: 'Miami',
-      state: 'FL',
-      country: 'United States',
-      nearbyHighlights: ['Private Marina - 3 mins', 'Ocean Drive - 10 mins', 'International Airport - 20 mins'],
-    },
-    description: 'A masterpiece of contemporary luxury architecture featuring expansive floor-to-ceiling double-glazed glass walls, imported Italian travertine surfaces, a temperature-controlled wine cellar, and an infinity pool floating over lush botanical gardens.',
-    highlights: [
-      'Panoramic Oceanfront Views',
-      'Private Heated Infinity Edge Pool',
-      'Smart Automation & Climate Control',
-      'Private Elevator & Rooftop Terrace'
-    ],
-    amenities: [
-      'Infinity Pool',
-      'Spa & Sauna',
-      'Wine Cellar',
-      'Private Elevator',
-      'Home Cinema',
-      'Smart Home Security',
-      'Chef Kitchen',
-      '3-Car Garage'
-    ],
-    images: [
-      {
-        id: 'img-1',
-        url: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=80',
-        caption: 'Front Exterior Facade',
-        category: 'Exterior',
-        isCover: true,
-        order: 1,
-      },
-      {
-        id: 'img-2',
-        url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=80',
-        caption: 'Infinity Pool & Lounge Terrace',
-        category: 'Exterior',
-        isCover: false,
-        order: 2,
-      },
-      {
-        id: 'img-3',
-        url: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=80',
-        caption: 'Open Concept Great Room',
-        category: 'Living Room',
-        isCover: false,
-        order: 3,
-      }
-    ],
-    contact: {
-      agentName: 'Alexander Vance',
-      agentRole: 'Principal Director, Luxury Estates',
-      phone: '+1 (305) 890-4421',
-      whatsappNumber: '13058904421',
-      email: 'alexander@luminaryestates.com',
-      agencyName: 'Luminary Real Estate Group',
-    },
-    status: 'published',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  }
-];
+// Sample data removed - using real database & user-created property data only
+export const sampleListings: PropertyListing[] = [];
 
 export async function ensureUniqueSlug(rawSlug: string, currentId?: string): Promise<string> {
   const listings = await getListings();
@@ -159,10 +80,16 @@ export async function getListings(): Promise<PropertyListing[]> {
 
   if (isSupabaseConfigured) {
     try {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('listings')
         .select('*')
         .order('created_at', { ascending: false });
+
+      if (error) {
+        const fallback = await supabase.from('listings').select('*');
+        data = fallback.data;
+        error = fallback.error;
+      }
 
       if (!error && data) {
         dbListings = data.map(fromDbRow);
@@ -178,19 +105,17 @@ export async function getListings(): Promise<PropertyListing[]> {
   const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
   if (localData !== null) {
     try {
-      localListings = JSON.parse(localData);
+      const parsed: PropertyListing[] = JSON.parse(localData);
+      // Filter out legacy sample listings from prior sessions
+      localListings = parsed.filter(
+        (l) => l.id !== 'sample-villa-1' && l.slug !== 'the-grand-luminary-villa' && !l.id.startsWith('sample-')
+      );
     } catch {
       localListings = [];
     }
-  } else {
-    // Initial setup if key is entirely absent from localStorage
-    localListings = sampleListings;
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(sampleListings));
-    } catch {}
   }
 
-  if (dbSuccess && dbListings.length > 0) {
+  if (dbSuccess) {
     const dbIds = new Set(dbListings.map((l) => l.id));
     const dbSlugs = new Set(dbListings.map((l) => l.slug));
 
@@ -205,35 +130,24 @@ export async function getListings(): Promise<PropertyListing[]> {
 }
 
 export async function getListingBySlug(slug: string): Promise<PropertyListing | null> {
-  console.log(`[DEBUG PIPELINE 6] getListingBySlug() called with slug: "${slug}"`);
   if (!slug) return null;
   const normalizedSlug = slug.toLowerCase().trim();
 
   // Direct Supabase fetch if configured
   if (isSupabaseConfigured) {
     try {
-      console.log(`[DEBUG PIPELINE 7a] Querying Supabase: SELECT * FROM listings WHERE slug = "${normalizedSlug}"`);
       const { data, error } = await supabase
         .from('listings')
         .select('*')
         .eq('slug', normalizedSlug)
         .maybeSingle();
 
-      console.log(`[DEBUG PIPELINE 7b] Supabase response for slug "${normalizedSlug}":`, {
-        error,
-        returnedData: data,
-        rowCount: data ? 1 : 0,
-        status: data?.status
-      });
-
       if (error) {
-        console.error('[DEBUG PIPELINE 9] Supabase query / RLS error during fetch:', error);
+        console.error('Supabase query error during fetch:', error);
       }
 
       if (!error && data) {
-        const parsed = fromDbRow(data);
-        console.log(`[DEBUG PIPELINE 6b] Found listing via direct Supabase query. Status: "${parsed.status}"`);
-        return parsed;
+        return fromDbRow(data);
       }
     } catch (e) {
       console.warn('Supabase getListingBySlug query error:', e);
@@ -241,16 +155,13 @@ export async function getListingBySlug(slug: string): Promise<PropertyListing | 
   }
 
   // Fetch all listings (combines DB + LocalStorage)
-  console.log('[DEBUG PIPELINE 7c] Checking combined getListings()...');
   const listings = await getListings();
   const match = listings.find((item) => item.slug.toLowerCase() === normalizedSlug);
 
   if (match) {
-    console.log(`[DEBUG PIPELINE 6c] Found match in combined listings array. Status: "${match.status}"`);
     return match;
   }
 
-  console.warn(`[DEBUG PIPELINE 7d] Zero rows found for slug "${normalizedSlug}".`);
   return null;
 }
 
@@ -278,16 +189,12 @@ export async function getListingById(id: string): Promise<PropertyListing | null
 }
 
 export async function saveListing(listing: PropertyListing): Promise<PropertyListing> {
-  console.log('[DEBUG PIPELINE 1] Exact listing object BEFORE publish:', JSON.parse(JSON.stringify(listing)));
-
   if (!listing.status) {
     listing.status = 'published';
   }
 
   // Ensure slug uniqueness across all listings
-  const rawSlug = listing.slug;
   listing.slug = await ensureUniqueSlug(listing.slug, listing.id);
-  console.log(`[DEBUG PIPELINE 4] Final Generated Slug: "${listing.slug}" (raw input was: "${rawSlug}")`);
 
   const now = new Date().toISOString();
   if (!listing.createdAt) listing.createdAt = now;
@@ -297,23 +204,67 @@ export async function saveListing(listing: PropertyListing): Promise<PropertyLis
   if (isSupabaseConfigured) {
     try {
       const dbRow = toDbRow(listing);
-      console.log('[DEBUG PIPELINE 3a] Writing row to Supabase table "listings":', dbRow);
 
-      const { data, error } = await supabase
+      let { error } = await supabase
         .from('listings')
-        .upsert([dbRow])
-        .select('*');
+        .upsert([dbRow]);
 
       if (error) {
-        console.error('[DEBUG PIPELINE 3b & 9] Supabase write ERROR or RLS permission failure:', error);
-      } else {
-        console.log('[DEBUG PIPELINE 3c] Row successfully written to Supabase! Returned row:', data);
+        // Fallback 1: Try without optional SEO columns if schema lacks them
+        const basicRow = {
+          id: listing.id,
+          slug: listing.slug,
+          title: listing.title,
+          tagline: listing.tagline || null,
+          price: listing.price || 0,
+          currency: listing.currency || '₹',
+          specs: listing.specs || {},
+          location: listing.location || {},
+          description: listing.description || '',
+          highlights: listing.highlights || [],
+          amenities: listing.amenities || [],
+          images: listing.images || [],
+          contact: listing.contact || {},
+          status: listing.status || 'published',
+          created_at: listing.createdAt || now,
+          updated_at: listing.updatedAt || now,
+        };
+
+        const res2 = await supabase.from('listings').upsert([basicRow]);
+        error = res2.error;
+      }
+
+      if (error) {
+        // Fallback 2: Try camelCase field names if table schema uses camelCase
+        const camelRow = {
+          id: listing.id,
+          slug: listing.slug,
+          title: listing.title,
+          tagline: listing.tagline || null,
+          price: listing.price || 0,
+          currency: listing.currency || '₹',
+          specs: listing.specs || {},
+          location: listing.location || {},
+          description: listing.description || '',
+          highlights: listing.highlights || [],
+          amenities: listing.amenities || [],
+          images: listing.images || [],
+          contact: listing.contact || {},
+          status: listing.status || 'published',
+          createdAt: listing.createdAt || now,
+          updatedAt: listing.updatedAt || now,
+        };
+
+        const res3 = await supabase.from('listings').upsert([camelRow]);
+        error = res3.error;
+      }
+
+      if (error) {
+        console.warn('Supabase write notice:', error.message || error);
       }
     } catch (e) {
-      console.error('[DEBUG PIPELINE 3d] Exception while writing to Supabase:', e);
+      console.warn('Exception while writing to Supabase:', e);
     }
-  } else {
-    console.warn('[DEBUG PIPELINE 3e] Supabase NOT configured. Saving only to LocalStorage.');
   }
 
   // 2. Always sync to Local Storage for instant local resolution
@@ -348,12 +299,10 @@ export async function saveListing(listing: PropertyListing): Promise<PropertyLis
 
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(sanitizedListings));
-    console.log('[DEBUG PIPELINE 3f] LocalStorage updated successfully. Count:', sanitizedListings.length);
   } catch (err) {
     console.warn('localStorage quota exceeded:', err);
   }
 
-  console.log('[DEBUG PIPELINE 2] Result returned from saveListing():', JSON.parse(JSON.stringify(listing)));
   return listing;
 }
 

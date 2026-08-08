@@ -26,14 +26,14 @@ export const LocationMap: React.FC<LocationMapProps> = ({ location }) => {
   )}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
 
   return (
-    <div className="space-y-6 pt-4 border-t border-white/[0.08]">
+    <div className="space-y-6 pt-4 border-t border-stone-200/80">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1 max-w-xl">
-          <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">
+          <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-stone-500">
             Location & Context
           </h2>
-          <p className="text-sm sm:text-base font-normal text-zinc-200 flex items-center gap-2 break-words">
-            <Navigation className="w-4 h-4 text-zinc-500 shrink-0" />
+          <p className="text-sm sm:text-base font-normal text-stone-900 flex items-center gap-2 break-words">
+            <Navigation className="w-4 h-4 text-emerald-800 shrink-0" />
             <span>{fullAddress}</span>
           </p>
         </div>
@@ -42,9 +42,9 @@ export const LocationMap: React.FC<LocationMapProps> = ({ location }) => {
           href={googleMapsSearchUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-3.5 py-1.5 rounded-full bg-zinc-900/80 border border-white/[0.08] text-zinc-300 hover:text-white hover:bg-zinc-800 text-xs font-mono flex items-center gap-2 transition-all shadow-sm"
+          className="px-3.5 py-1.5 rounded-full bg-white/90 border border-stone-200/80 text-stone-800 hover:text-stone-950 hover:bg-white text-xs font-mono flex items-center gap-2 transition-all shadow-xs"
         >
-          <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
+          <ExternalLink className="w-3.5 h-3.5 text-stone-500" />
           <span>Open Maps</span>
         </a>
       </div>
@@ -52,14 +52,14 @@ export const LocationMap: React.FC<LocationMapProps> = ({ location }) => {
       {/* Nearby Highlights list if present */}
       {location.nearbyHighlights && location.nearbyHighlights.length > 0 && (
         <div className="space-y-2 pt-1">
-          <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-zinc-500">
+          <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-stone-500">
             Nearby Landmarks
           </p>
           <div className="flex flex-wrap gap-2">
             {location.nearbyHighlights.map((highlight, idx) => (
               <span
                 key={idx}
-                className="px-3 py-1 rounded-full bg-zinc-900/50 border border-white/[0.08] text-xs text-zinc-300 font-normal"
+                className="px-3 py-1 rounded-full bg-stone-100 border border-stone-200/80 text-xs text-stone-800 font-normal shadow-2xs"
               >
                 {highlight}
               </span>
@@ -69,17 +69,17 @@ export const LocationMap: React.FC<LocationMapProps> = ({ location }) => {
       )}
 
       {/* Embedded Google Maps Container */}
-      <div className="w-full h-60 sm:h-72 rounded-xl overflow-hidden border border-white/[0.08] relative bg-zinc-950 shadow-inner">
+      <div className="w-full h-60 sm:h-72 rounded-2xl overflow-hidden border border-stone-200/80 relative bg-stone-100 shadow-xs">
         <iframe
           title="Property Location Map"
           src={mapEmbedUrl}
           width="100%"
           height="100%"
-          style={{ border: 0, filter: 'invert(90%) hue-rotate(180deg) contrast(100%)' }}
+          style={{ border: 0 }}
           allowFullScreen={false}
           loading="lazy"
           referrerPolicy="no-referrer-when-downgrade"
-          className="w-full h-full opacity-85 hover:opacity-100 transition-opacity"
+          className="w-full h-full opacity-90 hover:opacity-100 transition-opacity"
         />
       </div>
     </div>

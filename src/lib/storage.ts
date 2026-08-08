@@ -170,9 +170,12 @@ export async function getListingBySlug(slug: string): Promise<PropertyListing | 
   const normalizedSlug = slug.toLowerCase().trim();
 
   const findMatchingListing = (list: PropertyListing[]): PropertyListing | null => {
-    // 1. Exact slug or ID match
+    // 1. Exact slug, ID, or previousSlugs alias match
     let match = list.find(
-      (item) => item.slug.toLowerCase() === normalizedSlug || item.id === normalizedSlug
+      (item) =>
+        item.slug.toLowerCase() === normalizedSlug ||
+        item.id === normalizedSlug ||
+        ((item as any).previousSlugs && Array.isArray((item as any).previousSlugs) && (item as any).previousSlugs.some((ps: string) => ps.toLowerCase() === normalizedSlug))
     );
     if (match) return match;
 
@@ -181,21 +184,38 @@ export async function getListingBySlug(slug: string): Promise<PropertyListing | 
       s
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
-        .replace(/-(luxury|premium|featured|exclusive|prime)-/g, '-');
+        .replace(/-(luxury|premium|featured|exclusive|prime|sale|for)-/g, '-')
+        .replace(/(^-|-$)+/g, '');
 
     const strippedTarget = stripNoise(normalizedSlug);
-    match = list.find((item) => stripNoise(item.slug) === strippedTarget);
+    match = list.find(
+      (item) =>
+        stripNoise(item.slug) === strippedTarget ||
+        ((item as any).previousSlugs && Array.isArray((item as any).previousSlugs) && (item as any).previousSlugs.some((ps: string) => stripNoise(ps) === strippedTarget))
+    );
     if (match) return match;
 
     // 3. Core keywords subset match
     const keywords = normalizedSlug.split(/[^a-z0-9]+/).filter((k) => k.length > 0);
-    if (keywords.length >= 3) {
+    if (keywords.length >= 2) {
       match = list.find((item) => {
         const itemSlug = item.slug.toLowerCase();
         const itemTitle = item.title.toLowerCase();
-        return keywords.every((kw) => itemSlug.includes(kw) || itemTitle.includes(kw));
+        const itemLoc = JSON.stringify(item.location || {}).toLowerCase();
+        return keywords.every((kw) => itemSlug.includes(kw) || itemTitle.includes(kw) || itemLoc.includes(kw));
       });
       if (match) return match;
+    }
+
+    // 4. Fallback: If single published listing exists, match if overlapping keywords
+    const published = list.filter((l) => l.status === 'published');
+    if (published.length === 1) {
+      const keywords = normalizedSlug.split(/[^a-z0-9]+/).filter((k) => k.length > 1);
+      const itemText = (published[0].slug + ' ' + published[0].title).toLowerCase();
+      const matchesCount = keywords.filter((kw) => itemText.includes(kw)).length;
+      if (matchesCount >= 2 || (keywords.length === 1 && matchesCount === 1)) {
+        return published[0];
+      }
     }
 
     return null;

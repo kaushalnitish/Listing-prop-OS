@@ -342,9 +342,12 @@ INSTRUCTIONS & CONVERSIONS:
       const slug = req.params.slug.toLowerCase().trim();
       const listings = getStoredListings();
 
-      // 1. Exact match on slug or ID
+      // 1. Exact match on slug, ID, or previousSlugs aliases
       let match = listings.find(
-        (l: any) => (l.slug && l.slug.toLowerCase() === slug) || l.id === slug
+        (l: any) =>
+          (l.slug && l.slug.toLowerCase() === slug) ||
+          l.id === slug ||
+          (Array.isArray(l.previousSlugs) && l.previousSlugs.some((ps: string) => ps.toLowerCase() === slug))
       );
 
       // 2. Normalized comparison stripping optional noise words (e.g. "luxury", "premium")
@@ -353,21 +356,42 @@ INSTRUCTIONS & CONVERSIONS:
           s
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
-            .replace(/-(luxury|premium|featured|exclusive|prime)-/g, '-');
+            .replace(/-(luxury|premium|featured|exclusive|prime|sale|for)-/g, '-')
+            .replace(/(^-|-$)+/g, '');
 
         const strippedTarget = stripNoise(slug);
-        match = listings.find((l: any) => l.slug && stripNoise(l.slug) === strippedTarget);
+        match = listings.find(
+          (l: any) =>
+            (l.slug && stripNoise(l.slug) === strippedTarget) ||
+            (Array.isArray(l.previousSlugs) && l.previousSlugs.some((ps: string) => stripNoise(ps) === strippedTarget))
+        );
       }
 
       // 3. Keyword subset matching (if requested slug keywords are all contained in stored slug/title)
       if (!match) {
         const keywords = slug.split(/[^a-z0-9]+/).filter((k) => k.length > 0);
-        if (keywords.length >= 3) {
+        if (keywords.length >= 2) {
           match = listings.find((l: any) => {
             const itemSlug = (l.slug || '').toLowerCase();
             const itemTitle = (l.title || '').toLowerCase();
-            return keywords.every((kw) => itemSlug.includes(kw) || itemTitle.includes(kw));
+            const itemLocation = JSON.stringify(l.location || {}).toLowerCase();
+            return keywords.every(
+              (kw) => itemSlug.includes(kw) || itemTitle.includes(kw) || itemLocation.includes(kw)
+            );
           });
+        }
+      }
+
+      // 4. Fallback: Single published listing match if requested keywords overlap significantly
+      if (!match) {
+        const published = listings.filter((l: any) => l.status === 'published');
+        if (published.length === 1) {
+          const keywords = slug.split(/[^a-z0-9]+/).filter((k) => k.length > 1);
+          const itemText = (published[0].slug + ' ' + published[0].title).toLowerCase();
+          const matchesCount = keywords.filter((kw) => itemText.includes(kw)).length;
+          if (matchesCount >= 2 || (keywords.length === 1 && matchesCount === 1)) {
+            match = published[0];
+          }
         }
       }
 
@@ -431,7 +455,19 @@ INSTRUCTIONS & CONVERSIONS:
       // Match existing listing strictly by ID
       const existingIdx = listings.findIndex((l: any) => l.id === listing.id);
       if (existingIdx >= 0) {
-        const merged = { ...listings[existingIdx], ...listing, updatedAt: new Date().toISOString() };
+        const oldListing = listings[existingIdx];
+        const previousSlugs: string[] = Array.isArray(oldListing.previousSlugs)
+          ? [...oldListing.previousSlugs]
+          : [];
+        if (oldListing.slug && oldListing.slug !== listing.slug && !previousSlugs.includes(oldListing.slug)) {
+          previousSlugs.push(oldListing.slug);
+        }
+        const merged = {
+          ...oldListing,
+          ...listing,
+          previousSlugs,
+          updatedAt: new Date().toISOString(),
+        };
         listings[existingIdx] = merged;
         saveStoredListings(listings);
         return res.json({ success: true, data: merged });

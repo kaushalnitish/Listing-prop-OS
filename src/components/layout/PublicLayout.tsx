@@ -6,11 +6,12 @@ interface PublicLayoutProps {
 
 export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-zinc-100 selection:text-zinc-950">
+    <div className="min-h-screen bg-[#FAF9F6] text-stone-900 font-sans antialiased selection:bg-stone-200 selection:text-stone-900">
       <div className="w-full min-h-screen relative">
         {children}
       </div>
     </div>
   );
 };
+
 

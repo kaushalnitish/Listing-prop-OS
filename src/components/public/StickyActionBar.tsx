@@ -30,21 +30,21 @@ export const StickyActionBar: React.FC<StickyActionBarProps> = ({
 
   const agentName = contact.agentName || 'Estate Representative';
   const agentInitial = agentName.charAt(0).toUpperCase();
-  const agencyTitle = contact.agencyName || contact.agentRole || 'Director of Estates';
+  const agencyTitle = contact.agencyName || contact.agentRole || 'Property Advisor';
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/85 backdrop-blur-xl border-t border-white/[0.08] p-3 sm:p-4 shadow-2xl">
+    <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-stone-200/80 p-3 sm:p-4 shadow-lg">
       <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
         {/* Agent Info Snippet */}
         <div className="hidden sm:flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center font-mono font-medium text-zinc-200 text-xs shrink-0">
+          <div className="w-9 h-9 rounded-full bg-stone-100 border border-stone-200/80 flex items-center justify-center font-serif font-semibold text-stone-800 text-xs shrink-0 shadow-2xs">
             {agentInitial}
           </div>
           <div className="text-left">
-            <p className="text-xs font-semibold text-zinc-200">
+            <p className="text-xs font-semibold text-stone-900">
               {agentName}
             </p>
-            <p className="text-[10px] text-zinc-500 font-mono">
+            <p className="text-[10px] text-stone-500 font-mono">
               {agencyTitle}
             </p>
           </div>
@@ -56,9 +56,9 @@ export const StickyActionBar: React.FC<StickyActionBarProps> = ({
           {contact.phone && (
             <a
               href={callUrl}
-              className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-zinc-200 font-medium text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+              className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 rounded-full bg-stone-100 hover:bg-stone-200 border border-stone-200/80 text-stone-800 font-medium text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-2xs"
             >
-              <Phone className="w-3.5 h-3.5 text-zinc-400" />
+              <Phone className="w-3.5 h-3.5 text-stone-600" />
               <span>Call Direct</span>
             </a>
           )}
@@ -68,9 +68,9 @@ export const StickyActionBar: React.FC<StickyActionBarProps> = ({
             href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 sm:flex-none px-5 sm:px-6 py-2.5 rounded-full bg-white hover:bg-zinc-200 text-zinc-950 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]"
+            className="flex-1 sm:flex-none px-5 sm:px-6 py-2.5 rounded-full bg-emerald-800 hover:bg-emerald-900 text-white font-medium text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-xs active:scale-[0.98]"
           >
-            <MessageSquare className="w-3.5 h-3.5 fill-zinc-950 stroke-none" />
+            <MessageSquare className="w-3.5 h-3.5 fill-white stroke-none" />
             <span>Inquire on WhatsApp</span>
           </a>
         </div>

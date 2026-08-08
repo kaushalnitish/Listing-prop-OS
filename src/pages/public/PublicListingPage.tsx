@@ -118,7 +118,7 @@ export const PublicListingPage: React.FC = () => {
 
   return (
     <PublicLayout>
-      <div className="min-h-screen bg-zinc-950 pb-12">
+      <div className="min-h-screen bg-[#FAF9F6] pb-12">
         {/* 1. Hero Image Gallery */}
         <HeroGallery
           images={listing.images || []}

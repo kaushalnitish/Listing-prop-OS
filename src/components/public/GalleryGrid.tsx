@@ -14,12 +14,12 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({
   if (!images || images.length === 0) return null;
 
   return (
-    <div className="space-y-6 pt-4 border-t border-white/[0.08]">
+    <div className="space-y-6 pt-4 border-t border-stone-200/80">
       <div className="flex items-center justify-between">
-        <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">
+        <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-stone-500">
           Architecture & Interiors ({images.length})
         </h2>
-        <span className="text-xs font-mono text-zinc-500 hidden sm:inline">Select photo to view full frame</span>
+        <span className="text-xs font-mono text-stone-500 hidden sm:inline">Select photo to view full frame</span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -27,7 +27,7 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({
           <div
             key={img.id || idx}
             onClick={() => onOpenLightbox(idx)}
-            className="group relative aspect-[4/3] rounded-xl overflow-hidden bg-zinc-950 border border-white/[0.08] cursor-pointer transition-all duration-300 hover:border-zinc-600"
+            className="group relative aspect-[4/3] rounded-2xl overflow-hidden bg-stone-100 border border-stone-200/80 cursor-pointer transition-all duration-300 hover:border-stone-400 shadow-2xs"
           >
             <img
               src={img.url}
@@ -41,9 +41,9 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({
             />
 
             {/* Subtle Gradient & Caption Hover Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-4">
+            <div className="absolute inset-0 bg-gradient-to-t from-stone-900/80 via-stone-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-4">
               <div className="self-end">
-                <span className="p-2 rounded-full bg-black/60 border border-white/20 text-white inline-block shadow-lg backdrop-blur-md">
+                <span className="p-2 rounded-full bg-white/90 border border-stone-200 text-stone-900 inline-block shadow-md backdrop-blur-md">
                   <Maximize2 className="w-3.5 h-3.5" />
                 </span>
               </div>

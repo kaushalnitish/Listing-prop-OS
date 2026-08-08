@@ -26,7 +26,7 @@ const getHighlightIcon = (text: string) => {
     lower.includes('chandigarh') ||
     lower.includes('road')
   ) {
-    return <MapPin className="w-4 h-4 text-zinc-400 shrink-0" />;
+    return <MapPin className="w-4 h-4 text-emerald-800 shrink-0" />;
   }
   if (
     lower.includes('secure') ||
@@ -36,7 +36,7 @@ const getHighlightIcon = (text: string) => {
     lower.includes('safety') ||
     lower.includes('society')
   ) {
-    return <ShieldCheck className="w-4 h-4 text-zinc-400 shrink-0" />;
+    return <ShieldCheck className="w-4 h-4 text-emerald-800 shrink-0" />;
   }
   if (
     lower.includes('outlet') ||
@@ -46,7 +46,7 @@ const getHighlightIcon = (text: string) => {
     lower.includes('mall') ||
     lower.includes('brand')
   ) {
-    return <ShoppingBag className="w-4 h-4 text-zinc-400 shrink-0" />;
+    return <ShoppingBag className="w-4 h-4 text-emerald-800 shrink-0" />;
   }
   if (
     lower.includes('warranty') ||
@@ -56,7 +56,7 @@ const getHighlightIcon = (text: string) => {
     lower.includes('wooden') ||
     lower.includes('work')
   ) {
-    return <Award className="w-4 h-4 text-zinc-400 shrink-0" />;
+    return <Award className="w-4 h-4 text-emerald-800 shrink-0" />;
   }
   if (
     lower.includes('floor') ||
@@ -66,9 +66,9 @@ const getHighlightIcon = (text: string) => {
     lower.includes('level') ||
     lower.includes('structure')
   ) {
-    return <Layers className="w-4 h-4 text-zinc-400 shrink-0" />;
+    return <Layers className="w-4 h-4 text-emerald-800 shrink-0" />;
   }
-  return <CheckCircle2 className="w-4 h-4 text-zinc-400 shrink-0" />;
+  return <CheckCircle2 className="w-4 h-4 text-emerald-800 shrink-0" />;
 };
 
 export const PropertyStory: React.FC<PropertyStoryProps> = ({
@@ -78,26 +78,23 @@ export const PropertyStory: React.FC<PropertyStoryProps> = ({
 }) => {
   return (
     <div className="space-y-12 sm:space-y-16">
-      {/* Narrative Overview (Pure Editorial Text Section, No Card) */}
+      {/* Narrative Overview */}
       <div className="space-y-3 sm:space-y-4">
-        <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">
+        <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-stone-500">
           Overview
         </h2>
-        <div className="text-sm sm:text-base text-zinc-300 leading-relaxed sm:leading-7 font-light whitespace-pre-line max-w-2xl sm:max-w-3xl space-y-4">
+        <div className="text-sm sm:text-base text-stone-700 leading-relaxed sm:leading-7 font-normal whitespace-pre-line max-w-2xl sm:max-w-3xl space-y-4">
           {description}
         </div>
       </div>
 
-      {/* KEY HIGHLIGHTS — Single Frosted Glassmorphism Architectural Panel */}
+      {/* KEY HIGHLIGHTS — Single Refined Light Glassmorphism Panel */}
       {highlights.length > 0 && (
-        <div className="relative rounded-2xl bg-zinc-900/40 backdrop-blur-md border border-white/[0.08] p-6 sm:p-8 shadow-2xl shadow-black/40 overflow-hidden">
-          {/* Frosted architectural glass gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] via-transparent to-transparent pointer-events-none" />
-
+        <div className="relative rounded-2xl bg-white/90 backdrop-blur-md border border-stone-200/80 p-6 sm:p-8 shadow-xs overflow-hidden">
           <div className="relative z-10 space-y-6">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
-              <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-zinc-400">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-800" />
+              <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-stone-600">
                 Key Highlights
               </h2>
             </div>
@@ -106,12 +103,12 @@ export const PropertyStory: React.FC<PropertyStoryProps> = ({
               {highlights.map((highlight, idx) => (
                 <div
                   key={idx}
-                  className="flex items-start gap-3.5 pb-4 sm:pb-0 border-b border-white/[0.04] sm:border-b-0 last:border-b-0"
+                  className="flex items-start gap-3.5 pb-4 sm:pb-0 border-b border-stone-100 sm:border-b-0 last:border-b-0"
                 >
-                  <div className="p-2 rounded-xl bg-white/[0.03] border border-white/[0.06] shrink-0 mt-0.5 shadow-sm">
+                  <div className="p-2 rounded-xl bg-stone-50 border border-stone-200/60 shrink-0 mt-0.5 shadow-2xs">
                     {getHighlightIcon(highlight)}
                   </div>
-                  <p className="text-xs sm:text-sm font-normal text-zinc-200 leading-relaxed pt-0.5">
+                  <p className="text-xs sm:text-sm font-normal text-stone-800 leading-relaxed pt-0.5">
                     {highlight}
                   </p>
                 </div>
@@ -121,10 +118,10 @@ export const PropertyStory: React.FC<PropertyStoryProps> = ({
         </div>
       )}
 
-      {/* Luxury Amenities List */}
+      {/* Property Amenities List */}
       {amenities.length > 0 && (
-        <div className="space-y-4 pt-4 border-t border-white/[0.08]">
-          <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">
+        <div className="space-y-4 pt-4 border-t border-stone-200/80">
+          <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-stone-500">
             Property Amenities
           </h2>
 
@@ -132,7 +129,7 @@ export const PropertyStory: React.FC<PropertyStoryProps> = ({
             {amenities.map((amenity) => (
               <span
                 key={amenity}
-                className="px-3.5 py-1.5 rounded-full bg-zinc-900/50 border border-white/[0.08] text-xs font-normal text-zinc-300 tracking-wide hover:border-zinc-700 transition-colors"
+                className="px-3.5 py-1.5 rounded-full bg-white border border-stone-200/80 text-xs font-normal text-stone-800 tracking-wide hover:border-stone-300 transition-colors shadow-2xs"
               >
                 {amenity}
               </span>

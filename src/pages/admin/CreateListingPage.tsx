@@ -11,14 +11,14 @@ export const CreateListingPage: React.FC = () => {
         <div className="flex items-center gap-3">
           <Link
             to="/admin"
-            className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-100 hover:border-zinc-700 transition-colors"
+            className="p-2 rounded-xl bg-white border border-stone-200 text-stone-600 hover:text-stone-900 hover:border-stone-300 shadow-2xs transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
-            <h1 className="text-xl font-bold text-zinc-100">Create Property Listing</h1>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              Upload photos and client notes to create a bespoke property presentation.
+            <h1 className="text-xl font-bold text-stone-900">Create Property Listing</h1>
+            <p className="text-xs text-stone-500 mt-0.5">
+              Upload photos and client notes to generate a property presentation.
             </p>
           </div>
         </div>

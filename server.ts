@@ -341,7 +341,36 @@ INSTRUCTIONS & CONVERSIONS:
     try {
       const slug = req.params.slug.toLowerCase().trim();
       const listings = getStoredListings();
-      const match = listings.find((l: any) => l.slug.toLowerCase() === slug);
+
+      // 1. Exact match on slug or ID
+      let match = listings.find(
+        (l: any) => (l.slug && l.slug.toLowerCase() === slug) || l.id === slug
+      );
+
+      // 2. Normalized comparison stripping optional noise words (e.g. "luxury", "premium")
+      if (!match) {
+        const stripNoise = (s: string) =>
+          s
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/-(luxury|premium|featured|exclusive|prime)-/g, '-');
+
+        const strippedTarget = stripNoise(slug);
+        match = listings.find((l: any) => l.slug && stripNoise(l.slug) === strippedTarget);
+      }
+
+      // 3. Keyword subset matching (if requested slug keywords are all contained in stored slug/title)
+      if (!match) {
+        const keywords = slug.split(/[^a-z0-9]+/).filter((k) => k.length > 0);
+        if (keywords.length >= 3) {
+          match = listings.find((l: any) => {
+            const itemSlug = (l.slug || '').toLowerCase();
+            const itemTitle = (l.title || '').toLowerCase();
+            return keywords.every((kw) => itemSlug.includes(kw) || itemTitle.includes(kw));
+          });
+        }
+      }
+
       if (!match) {
         return res.status(404).json({ success: false, error: "Listing not found" });
       }

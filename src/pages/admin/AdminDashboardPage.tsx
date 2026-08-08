@@ -1,22 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AdminLayout } from '../../components/layout/AdminLayout';
 import {
   Plus,
   Eye,
   Edit3,
-  Share2,
-  Building2,
   Search,
   Copy,
   Archive,
   Trash2,
   CheckCircle2,
-  FileText,
-  Clock,
-  Filter,
+  Building2,
   RotateCcw,
   X,
+  MapPin,
+  ArrowUpDown,
+  SlidersHorizontal,
+  ExternalLink,
+  Bed,
+  Bath,
+  Maximize2,
 } from 'lucide-react';
 import { getListings, saveListing, deleteListing } from '../../lib/storage';
 import { PropertyListing } from '../../types';
@@ -29,19 +32,20 @@ export const AdminDashboardPage: React.FC = () => {
   // Toast Notification state
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'info'; message: string } | null>(null);
 
-  // Auto dismiss toast after 6 seconds
+  // Auto dismiss toast after 5 seconds
   useEffect(() => {
     if (toastMessage) {
       const timer = setTimeout(() => {
         setToastMessage(null);
-      }, 6000);
+      }, 5000);
       return () => clearTimeout(timer);
     }
   }, [toastMessage]);
 
-  // Search & Filter State
+  // Search, Filter & Sort State
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft' | 'archived'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'archived'>('all');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'price-low' | 'price-high' | 'title'>('newest');
 
   const fetchListingsData = async () => {
     setLoading(true);
@@ -55,28 +59,49 @@ export const AdminDashboardPage: React.FC = () => {
   }, []);
 
   // Filter & Search Logic
-  const filteredListings = listings.filter((item) => {
-    const matchesSearch =
-      searchQuery.trim() === '' ||
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.location.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.location.neighborhood.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.slug.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredAndSortedListings = useMemo(() => {
+    const filtered = listings.filter((item) => {
+      const matchesSearch =
+        searchQuery.trim() === '' ||
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.location.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.location.neighborhood.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.slug.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesStatus =
-      statusFilter === 'all'
-        ? true
-        : item.status === statusFilter;
+      const matchesStatus =
+        statusFilter === 'all'
+          ? true
+          : item.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
-  });
+      return matchesSearch && matchesStatus;
+    });
+
+    return filtered.sort((a, b) => {
+      if (sortBy === 'newest') {
+        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      }
+      if (sortBy === 'oldest') {
+        return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+      }
+      if (sortBy === 'price-high') {
+        return (b.price || 0) - (a.price || 0);
+      }
+      if (sortBy === 'price-low') {
+        return (a.price || 0) - (b.price || 0);
+      }
+      if (sortBy === 'title') {
+        return a.title.localeCompare(b.title);
+      }
+      return 0;
+    });
+  }, [listings, searchQuery, statusFilter, sortBy]);
 
   // Action Handlers
   const handleCopyLink = async (item: PropertyListing) => {
     if (item.status !== 'published') {
       setToastMessage({
         type: 'info',
-        message: 'Only published listings have a public link.',
+        message: 'Only published listings have a public live link.',
       });
       return;
     }
@@ -86,7 +111,7 @@ export const AdminDashboardPage: React.FC = () => {
       await navigator.clipboard.writeText(publicUrl);
       setToastMessage({
         type: 'success',
-        message: 'Listing link copied',
+        message: 'Public listing URL copied to clipboard.',
       });
     } catch (err) {
       console.error('Failed to copy link:', err);
@@ -115,7 +140,7 @@ export const AdminDashboardPage: React.FC = () => {
       await fetchListingsData();
       setToastMessage({
         type: 'info',
-        message: 'Listing archived. It is no longer publicly visible. You can republish it anytime from Archived Listings.',
+        message: 'Listing archived. It is no longer publicly visible.',
       });
     } catch (err) {
       console.error('Failed to archive listing:', err);
@@ -137,7 +162,7 @@ export const AdminDashboardPage: React.FC = () => {
       await fetchListingsData();
       setToastMessage({
         type: 'success',
-        message: 'Listing republished successfully. It is now live and publicly accessible.',
+        message: 'Listing republished successfully and is live publicly.',
       });
     } catch (err) {
       console.error('Failed to republish listing:', err);
@@ -178,27 +203,27 @@ export const AdminDashboardPage: React.FC = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Header Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-zinc-800/80">
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-100">
-              Property Listings Portfolio
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-900">
+              Property Listings
             </h1>
-            <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-              Internal agency management — Search, publish, edit, archive and manage property listings
+            <p className="text-xs sm:text-sm text-stone-500 mt-1 font-normal">
+              Manage, publish, and archive all your property listings.
             </p>
           </div>
           <Link
             to="/admin/new"
-            className="inline-flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-lg shadow-amber-500/10 shrink-0"
+            className="inline-flex items-center justify-center gap-2 bg-stone-900 hover:bg-stone-800 text-white px-4 py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all shadow-2xs shrink-0"
           >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Create New Listing</span>
+            <Plus className="w-4 h-4" />
+            <span>Create Listing</span>
           </Link>
         </div>
 
-        {/* Search & Filter Bar */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-zinc-900/60 border border-zinc-800/80 p-3 sm:p-4 rounded-2xl">
+        {/* Search & Filter Toolbar */}
+        <div className="bg-white border border-stone-200/80 rounded-2xl p-3 sm:p-4 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4">
           {/* Search Input */}
           <div className="relative w-full md:w-80">
             <input
@@ -206,67 +231,96 @@ export const AdminDashboardPage: React.FC = () => {
               placeholder="Search by title, city or slug..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-amber-500 transition-colors pl-9"
+              className="w-full bg-stone-50/80 border border-stone-200 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-400 focus:bg-white transition-colors pl-9"
             />
-            <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-2.5 text-stone-400 hover:text-stone-600 p-0.5"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
-          {/* Status Filter Tabs */}
-          <div className="flex items-center gap-1.5 bg-zinc-950 p-1 rounded-xl border border-zinc-800/80 w-full md:w-auto overflow-x-auto">
-            {(
-              [
-                { key: 'all', label: 'All Listings' },
-                { key: 'published', label: 'Published' },
-                { key: 'archived', label: 'Archived' },
-              ] as const
-            ).map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setStatusFilter(tab.key)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0 ${
-                  statusFilter === tab.key
-                    ? 'bg-amber-500 text-zinc-950 font-bold'
-                    : 'text-zinc-400 hover:text-zinc-200'
-                }`}
+          {/* Controls Right */}
+          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
+            {/* Filter Tabs */}
+            <div className="flex items-center gap-1 bg-stone-100/80 p-1 rounded-xl border border-stone-200/60 overflow-x-auto">
+              {(
+                [
+                  { key: 'all', label: 'All Listings' },
+                  { key: 'published', label: 'Published' },
+                  { key: 'archived', label: 'Archived' },
+                ] as const
+              ).map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setStatusFilter(tab.key)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 ${
+                    statusFilter === tab.key
+                      ? 'bg-white text-stone-900 font-semibold shadow-2xs'
+                      : 'text-stone-500 hover:text-stone-800'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Sort Dropdown */}
+            <div className="relative flex items-center gap-1.5 bg-stone-50 border border-stone-200/80 rounded-xl px-3 py-1.5 text-xs text-stone-600">
+              <ArrowUpDown className="w-3.5 h-3.5 text-stone-400" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="bg-transparent text-xs text-stone-800 font-medium focus:outline-none cursor-pointer pr-1"
               >
-                {tab.label}
-              </button>
-            ))}
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="price-high">Price: High to Low</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="title">Title A-Z</option>
+              </select>
+            </div>
           </div>
         </div>
 
         {/* Listings Grid */}
         {loading ? (
-          <div className="py-20 text-center text-zinc-400 text-sm font-mono flex items-center justify-center gap-2">
-            <div className="w-5 h-5 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
-            <span>Fetching listings portfolio...</span>
+          <div className="py-24 text-center text-stone-500 text-sm flex items-center justify-center gap-2">
+            <div className="w-5 h-5 rounded-full border-2 border-stone-800 border-t-transparent animate-spin" />
+            <span className="font-medium">Loading property listings...</span>
           </div>
-        ) : filteredListings.length === 0 ? (
-          <div className="py-20 text-center border border-dashed border-zinc-800 rounded-2xl p-8 bg-zinc-900/40 space-y-3">
-            <Building2 className="w-12 h-12 text-zinc-600 mx-auto" />
-            <h3 className="text-base font-semibold text-zinc-200">No Listings Match Filter</h3>
-            <p className="text-xs text-zinc-400 max-w-sm mx-auto">
-              Try updating your search query or switching filter tabs.
+        ) : filteredAndSortedListings.length === 0 ? (
+          <div className="py-20 text-center border border-dashed border-stone-200 rounded-2xl p-8 bg-white shadow-2xs space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-stone-50 border border-stone-200/80 flex items-center justify-center mx-auto text-stone-400">
+              <Building2 className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-semibold text-stone-800">No Property Listings Found</h3>
+            <p className="text-xs text-stone-500 max-w-sm mx-auto">
+              No properties matched your current search query or filter selection.
             </p>
             <button
               onClick={() => {
                 setSearchQuery('');
                 setStatusFilter('all');
               }}
-              className="text-xs text-amber-400 hover:underline font-medium"
+              className="text-xs text-stone-900 font-semibold underline underline-offset-4 hover:text-stone-700"
             >
               Reset Filters
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredListings.map((item) => (
+            {filteredAndSortedListings.map((item) => (
               <div
                 key={item.id}
-                className="bg-zinc-900/70 border border-zinc-800/80 rounded-2xl overflow-hidden hover:border-zinc-700/80 transition-all flex flex-col group"
+                className="bg-white border border-stone-200/90 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md hover:border-stone-300 transition-all duration-200 flex flex-col group"
               >
-                {/* Cover Image & Status Badge */}
-                <div className="relative aspect-[16/10] bg-zinc-950 overflow-hidden">
+                {/* Property Cover Image & Badges */}
+                <div className="relative aspect-[16/10] bg-stone-100 overflow-hidden">
                   <img
                     src={
                       item.images?.[0]?.url ||
@@ -277,104 +331,134 @@ export const AdminDashboardPage: React.FC = () => {
                     height="500"
                     loading="lazy"
                     decoding="async"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                     referrerPolicy="no-referrer"
                   />
 
-                  {/* Price Tag */}
-                  <div className="absolute top-3 left-3 bg-zinc-950/90 backdrop-blur-md px-2.5 py-1 rounded-md text-[11px] font-mono text-amber-400 font-bold border border-amber-500/20 shadow-lg">
+                  {/* Price Tag Overlay */}
+                  <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg text-xs font-semibold text-stone-900 border border-stone-200/80 shadow-2xs">
                     {item.currency}
                     {item.price ? item.price.toLocaleString() : 'P.O.A.'}
                   </div>
 
-                  {/* Status Badge */}
-                  {item.status !== 'draft' && (
-                    <div
-                      className={`absolute top-3 right-3 text-[10px] uppercase font-extrabold px-2.5 py-0.5 rounded-full backdrop-blur-md border shadow-md ${
-                        item.status === 'published'
-                          ? 'bg-emerald-950/90 text-emerald-400 border-emerald-500/40'
-                          : 'bg-zinc-900/90 text-zinc-400 border-zinc-700'
-                      }`}
-                    >
-                      {item.status}
-                    </div>
-                  )}
+                  {/* Status Badge Overlay */}
+                  <div className="absolute top-3 right-3">
+                    {item.status === 'published' ? (
+                      <span className="bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[11px] font-medium px-2.5 py-0.5 rounded-full shadow-2xs inline-flex items-center gap-1.5 backdrop-blur-md">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Published
+                      </span>
+                    ) : item.status === 'archived' ? (
+                      <span className="bg-stone-100/90 text-stone-600 border border-stone-200 text-[11px] font-medium px-2.5 py-0.5 rounded-full shadow-2xs backdrop-blur-md">
+                        Archived
+                      </span>
+                    ) : (
+                      <span className="bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-medium px-2.5 py-0.5 rounded-full shadow-2xs backdrop-blur-md">
+                        Draft
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                {/* Card Details */}
+                {/* Card Content Body */}
                 <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                  <div>
-                    <h3 className="text-base font-bold text-zinc-100 line-clamp-1">
+                  <div className="space-y-1.5">
+                    <h3 className="text-base font-semibold text-stone-900 group-hover:text-stone-700 transition-colors line-clamp-1">
                       {item.title}
                     </h3>
-                    <p className="text-xs text-zinc-400 mt-1 line-clamp-1">
-                      {item.location.neighborhood || item.location.address || 'Exclusive Address'},{' '}
-                      {item.location.city}
+                    <p className="text-xs text-stone-500 flex items-center gap-1.5 line-clamp-1">
+                      <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                      <span>
+                        {item.location.neighborhood || item.location.address || 'Exclusive Area'},{' '}
+                        {item.location.city}
+                      </span>
                     </p>
+
+                    {/* Quick Specs Badges */}
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      {item.specs?.bedrooms ? (
+                        <span className="text-[11px] text-stone-600 bg-stone-50 px-2 py-0.5 rounded-md border border-stone-200/60 font-medium inline-flex items-center gap-1">
+                          <Bed className="w-3 h-3 text-stone-400" />
+                          {item.specs.bedrooms} Beds
+                        </span>
+                      ) : null}
+                      {item.specs?.bathrooms ? (
+                        <span className="text-[11px] text-stone-600 bg-stone-50 px-2 py-0.5 rounded-md border border-stone-200/60 font-medium inline-flex items-center gap-1">
+                          <Bath className="w-3 h-3 text-stone-400" />
+                          {item.specs.bathrooms} Baths
+                        </span>
+                      ) : null}
+                      {item.specs?.squareFeet ? (
+                        <span className="text-[11px] text-stone-600 bg-stone-50 px-2 py-0.5 rounded-md border border-stone-200/60 font-medium inline-flex items-center gap-1">
+                          <Maximize2 className="w-3 h-3 text-stone-400" />
+                          {item.specs.squareFeet} sqft
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
 
-                  {/* Bottom Toolbar & Action Buttons */}
-                  <div className="pt-4 border-t border-zinc-800/60 flex items-center justify-between gap-2 text-xs text-zinc-400">
-                    <span className="font-mono text-[10px] text-zinc-500 truncate max-w-[100px]">
-                      /{item.slug}
+                  {/* Slug & Action Toolbar */}
+                  <div className="pt-3 border-t border-stone-100 flex items-center justify-between gap-2 text-xs text-stone-500">
+                    <span className="font-mono text-[11px] text-stone-400 truncate max-w-[110px]" title={item.slug}>
+                      /p/{item.slug}
                     </span>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1">
                       {/* View Link */}
                       <a
                         href={`/p/${item.slug}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-colors"
+                        className="p-1.5 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors"
                         title="View Public Page"
                       >
-                        <Eye className="w-3.5 h-3.5" />
+                        <Eye className="w-4 h-4" />
                       </a>
 
                       {/* Edit Button */}
                       <Link
                         to={`/admin/edit/${item.id}`}
-                        className="p-2 rounded-lg bg-zinc-800 hover:bg-amber-500 hover:text-zinc-950 text-zinc-200 transition-colors"
+                        className="p-1.5 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors"
                         title="Edit Listing"
                       >
-                        <Edit3 className="w-3.5 h-3.5" />
+                        <Edit3 className="w-4 h-4" />
                       </Link>
 
-                      {/* Copy Public Link Button */}
+                      {/* Copy Link Button */}
                       <button
                         onClick={() => handleCopyLink(item)}
-                        className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-colors"
+                        className="p-1.5 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors"
                         title="Copy Public Link"
                       >
-                        <Copy className="w-3.5 h-3.5" />
+                        <Copy className="w-4 h-4" />
                       </button>
 
                       {/* Archive / Republish Button */}
                       {item.status === 'archived' ? (
                         <button
                           onClick={() => handleRepublish(item)}
-                          className="p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-colors flex items-center gap-1"
+                          className="p-1.5 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 transition-colors"
                           title="Republish Listing"
                         >
-                          <RotateCcw className="w-3.5 h-3.5" />
+                          <RotateCcw className="w-4 h-4" />
                         </button>
                       ) : (
                         <button
                           onClick={() => handleArchiveRequest(item)}
-                          className="p-2 rounded-lg bg-zinc-800 hover:bg-amber-500/20 hover:text-amber-400 text-zinc-200 transition-colors"
+                          className="p-1.5 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors"
                           title="Archive Listing"
                         >
-                          <Archive className="w-3.5 h-3.5" />
+                          <Archive className="w-4 h-4" />
                         </button>
                       )}
 
                       {/* Delete Button */}
                       <button
                         onClick={() => handleDeleteRequest(item)}
-                        className="p-2 rounded-lg bg-zinc-800 hover:bg-red-500/20 hover:text-red-400 text-zinc-400 transition-colors"
+                        className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                         title="Delete Listing"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -386,15 +470,9 @@ export const AdminDashboardPage: React.FC = () => {
 
         {/* Toast Notification Banner */}
         {toastMessage && (
-          <div className="fixed top-6 right-6 z-50 max-w-md w-full animate-in slide-in-from-top-4 fade-in duration-300">
-            <div
-              className={`p-4 rounded-xl border shadow-2xl backdrop-blur-md flex items-start justify-between gap-3 ${
-                toastMessage.type === 'success'
-                  ? 'bg-emerald-950/95 border-emerald-500/40 text-emerald-100'
-                  : 'bg-zinc-900/95 border-amber-500/40 text-zinc-100'
-              }`}
-            >
-              <div className="flex items-start gap-3">
+          <div className="fixed top-6 right-6 z-50 max-w-md w-full animate-in slide-in-from-top-4 fade-in duration-200">
+            <div className="p-4 rounded-xl border border-stone-200 bg-stone-900 text-white shadow-xl flex items-start justify-between gap-3">
+              <div className="flex items-start gap-2.5">
                 <CheckCircle2
                   className={`w-5 h-5 shrink-0 mt-0.5 ${
                     toastMessage.type === 'success' ? 'text-emerald-400' : 'text-amber-400'
@@ -405,7 +483,7 @@ export const AdminDashboardPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setToastMessage(null)}
-                className="text-zinc-400 hover:text-zinc-100 p-1 rounded-lg hover:bg-white/10 transition-colors shrink-0"
+                className="text-stone-400 hover:text-white p-1 rounded-lg hover:bg-stone-800 transition-colors shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -415,16 +493,16 @@ export const AdminDashboardPage: React.FC = () => {
 
         {/* Archive Confirmation Modal */}
         {itemToArchive && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-xs animate-in fade-in duration-200">
+            <div className="bg-white border border-stone-200 rounded-2xl p-6 max-w-md w-full shadow-xl space-y-4">
               <div className="flex items-start justify-between gap-3">
-                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400">
-                  <Archive className="w-6 h-6" />
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-700">
+                  <Archive className="w-5 h-5" />
                 </div>
                 <button
                   type="button"
                   onClick={() => !isArchiving && setItemToArchive(null)}
-                  className="text-zinc-400 hover:text-zinc-200 text-sm p-1 rounded-lg hover:bg-zinc-800 transition-colors"
+                  className="text-stone-400 hover:text-stone-600 p-1 rounded-lg transition-colors"
                   disabled={isArchiving}
                 >
                   <X className="w-4 h-4" />
@@ -432,23 +510,23 @@ export const AdminDashboardPage: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <h3 className="text-lg font-bold text-zinc-100">Archive Listing?</h3>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Archive this listing? It will no longer be visible publicly, but you can republish it anytime from Archived Listings.
+                <h3 className="text-lg font-semibold text-stone-900">Archive Listing?</h3>
+                <p className="text-xs text-stone-500 leading-relaxed">
+                  This property will be hidden from public access. You can republish it at any time from the Archived listings tab.
                 </p>
               </div>
 
-              <div className="p-3 bg-zinc-950/80 border border-zinc-800/80 rounded-xl text-xs space-y-1">
-                <span className="font-semibold text-zinc-200 block truncate">{itemToArchive.title}</span>
-                <span className="text-zinc-500 block truncate font-mono">ID: {itemToArchive.id}</span>
+              <div className="p-3 bg-stone-50 border border-stone-200/80 rounded-xl text-xs space-y-0.5">
+                <span className="font-semibold text-stone-800 block truncate">{itemToArchive.title}</span>
+                <span className="text-stone-400 block truncate font-mono text-[11px]">ID: {itemToArchive.id}</span>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-2">
+              <div className="flex items-center justify-end gap-2.5 pt-2">
                 <button
                   type="button"
                   onClick={() => setItemToArchive(null)}
                   disabled={isArchiving}
-                  className="px-4 py-2 rounded-xl border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition-colors disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 text-xs font-medium transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -456,17 +534,17 @@ export const AdminDashboardPage: React.FC = () => {
                   type="button"
                   onClick={confirmArchive}
                   disabled={isArchiving}
-                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold transition-all shadow-lg shadow-amber-500/20 inline-flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold transition-all shadow-2xs inline-flex items-center gap-1.5 disabled:opacity-50"
                 >
                   {isArchiving ? (
                     <>
-                      <div className="w-3.5 h-3.5 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       <span>Archiving...</span>
                     </>
                   ) : (
                     <>
                       <Archive className="w-3.5 h-3.5" />
-                      <span>Archive Listing</span>
+                      <span>Confirm Archive</span>
                     </>
                   )}
                 </button>
@@ -477,44 +555,40 @@ export const AdminDashboardPage: React.FC = () => {
 
         {/* Delete Confirmation Modal */}
         {itemToDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-xs animate-in fade-in duration-200">
+            <div className="bg-white border border-stone-200 rounded-2xl p-6 max-w-md w-full shadow-xl space-y-4">
               <div className="flex items-start justify-between gap-3">
-                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400">
-                  <Trash2 className="w-6 h-6" />
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-600">
+                  <Trash2 className="w-5 h-5" />
                 </div>
                 <button
                   type="button"
                   onClick={() => !isDeleting && setItemToDelete(null)}
-                  className="text-zinc-400 hover:text-zinc-200 text-sm p-1 rounded-lg hover:bg-zinc-800 transition-colors"
+                  className="text-stone-400 hover:text-stone-600 p-1 rounded-lg transition-colors"
                   disabled={isDeleting}
                 >
-                  ✕
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
               <div className="space-y-1">
-                <h3 className="text-lg font-bold text-zinc-100">Delete Listing</h3>
-                <p className="text-xs text-zinc-400">
-                  Are you sure you want to delete this listing?
+                <h3 className="text-lg font-semibold text-stone-900">Delete Listing Permanently</h3>
+                <p className="text-xs text-stone-500 leading-relaxed">
+                  Are you sure you want to delete this listing? This action cannot be undone.
                 </p>
               </div>
 
-              <div className="p-3 bg-zinc-950/80 border border-zinc-800/80 rounded-xl text-xs space-y-1">
-                <span className="font-semibold text-zinc-200 block truncate">{itemToDelete.title}</span>
-                <span className="text-zinc-500 block truncate font-mono">ID: {itemToDelete.id}</span>
+              <div className="p-3 bg-stone-50 border border-stone-200/80 rounded-xl text-xs space-y-0.5">
+                <span className="font-semibold text-stone-800 block truncate">{itemToDelete.title}</span>
+                <span className="text-stone-400 block truncate font-mono text-[11px]">ID: {itemToDelete.id}</span>
               </div>
 
-              <p className="text-xs text-red-400/90 leading-relaxed">
-                This action cannot be undone. It will permanently remove this property listing and clean up its stored images.
-              </p>
-
-              <div className="flex items-center justify-end gap-3 pt-2">
+              <div className="flex items-center justify-end gap-2.5 pt-2">
                 <button
                   type="button"
                   onClick={() => setItemToDelete(null)}
                   disabled={isDeleting}
-                  className="px-4 py-2 rounded-xl border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition-colors disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 text-xs font-medium transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -522,7 +596,7 @@ export const AdminDashboardPage: React.FC = () => {
                   type="button"
                   onClick={confirmDelete}
                   disabled={isDeleting}
-                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-all shadow-lg shadow-red-600/20 inline-flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold transition-all shadow-2xs inline-flex items-center gap-1.5 disabled:opacity-50"
                 >
                   {isDeleting ? (
                     <>

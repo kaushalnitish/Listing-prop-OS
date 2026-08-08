@@ -169,6 +169,38 @@ export async function getListingBySlug(slug: string): Promise<PropertyListing | 
   if (!slug) return null;
   const normalizedSlug = slug.toLowerCase().trim();
 
+  const findMatchingListing = (list: PropertyListing[]): PropertyListing | null => {
+    // 1. Exact slug or ID match
+    let match = list.find(
+      (item) => item.slug.toLowerCase() === normalizedSlug || item.id === normalizedSlug
+    );
+    if (match) return match;
+
+    // 2. Normalized comparison stripping optional noise words (e.g. "luxury", "premium")
+    const stripNoise = (s: string) =>
+      s
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/-(luxury|premium|featured|exclusive|prime)-/g, '-');
+
+    const strippedTarget = stripNoise(normalizedSlug);
+    match = list.find((item) => stripNoise(item.slug) === strippedTarget);
+    if (match) return match;
+
+    // 3. Core keywords subset match
+    const keywords = normalizedSlug.split(/[^a-z0-9]+/).filter((k) => k.length > 0);
+    if (keywords.length >= 3) {
+      match = list.find((item) => {
+        const itemSlug = item.slug.toLowerCase();
+        const itemTitle = item.title.toLowerCase();
+        return keywords.every((kw) => itemSlug.includes(kw) || itemTitle.includes(kw));
+      });
+      if (match) return match;
+    }
+
+    return null;
+  };
+
   // 1. Try Backend Server API first
   try {
     const res = await fetch(`/api/listings/slug/${encodeURIComponent(normalizedSlug)}`);
@@ -186,7 +218,7 @@ export async function getListingBySlug(slug: string): Promise<PropertyListing | 
       const { data, error } = await supabase
         .from('listings')
         .select('*')
-        .eq('slug', normalizedSlug)
+        .or(`slug.eq.${normalizedSlug},id.eq.${normalizedSlug}`)
         .maybeSingle();
 
       if (!error && data) {
@@ -199,8 +231,7 @@ export async function getListingBySlug(slug: string): Promise<PropertyListing | 
 
   // 3. Fallback to combined getListings()
   const listings = await getListings();
-  const match = listings.find((item) => item.slug.toLowerCase() === normalizedSlug);
-  return match || null;
+  return findMatchingListing(listings);
 }
 
 export async function getListingById(id: string): Promise<PropertyListing | null> {

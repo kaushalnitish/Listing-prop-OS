@@ -14,58 +14,58 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800/60">
+    <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-stone-200/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <Link to="/admin" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:bg-amber-500/20 transition-colors">
+          <div className="w-9 h-9 rounded-xl bg-stone-900 flex items-center justify-center text-white shadow-2xs group-hover:bg-stone-800 transition-colors">
             <Building2 className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-sm font-semibold tracking-wide text-zinc-100 uppercase">
+            <span className="text-sm font-bold tracking-tight text-stone-900 block leading-none">
               Lumina Studio
             </span>
-            <span className="block text-[10px] text-zinc-400 uppercase tracking-widest font-mono">
-              Internal Tool
+            <span className="text-[10px] text-stone-400 font-medium">
+              Property Platform
             </span>
           </div>
         </Link>
 
-        <nav className="flex items-center gap-2 sm:gap-4">
+        <nav className="flex items-center gap-2 sm:gap-3">
           <Link
             to="/admin"
-            className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1.5 transition-colors ${
+            className={`px-3 py-1.5 rounded-xl text-xs sm:text-sm font-medium flex items-center gap-1.5 transition-colors ${
               location.pathname === '/admin'
-                ? 'bg-zinc-800 text-zinc-100'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                ? 'bg-stone-100 text-stone-900 font-semibold'
+                : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
             }`}
           >
-            <LayoutDashboard className="w-4 h-4" />
+            <LayoutDashboard className="w-4 h-4 text-stone-500" />
             <span className="hidden sm:inline">Dashboard</span>
-          </Link>
-
-          <Link
-            to="/admin/new"
-            className="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium bg-amber-500 hover:bg-amber-400 text-zinc-950 flex items-center gap-1.5 transition-all shadow-sm shadow-amber-500/20"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Create Listing</span>
           </Link>
 
           <Link
             to="/p/the-grand-luminary-villa"
             target="_blank"
             rel="noreferrer"
-            className="p-1.5 sm:px-3 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 flex items-center gap-1.5 border border-zinc-800"
+            className="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-50 border border-stone-200/80 flex items-center gap-1.5 transition-colors shadow-2xs"
             title="Preview Public Template"
           >
-            <ExternalLink className="w-4 h-4" />
+            <ExternalLink className="w-4 h-4 text-stone-400" />
             <span className="hidden md:inline">Sample Preview</span>
+          </Link>
+
+          <Link
+            to="/admin/new"
+            className="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-stone-900 hover:bg-stone-800 text-white flex items-center gap-1.5 transition-all shadow-2xs"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Create Listing</span>
           </Link>
 
           {ENABLE_AUTH && authenticated && (
             <button
               onClick={handleLogout}
-              className="p-1.5 sm:px-3 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium text-zinc-400 hover:text-red-400 hover:bg-red-950/30 flex items-center gap-1.5 border border-zinc-800/80 transition-colors"
+              className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl text-xs sm:text-sm font-medium text-stone-500 hover:text-rose-600 hover:bg-rose-50 flex items-center gap-1.5 border border-stone-200/80 transition-colors"
               title="Sign Out of Admin"
             >
               <LogOut className="w-4 h-4" />

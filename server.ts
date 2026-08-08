@@ -1,13 +1,52 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 
 async function startServer() {
   const app = express();
-  app.use(express.json({ limit: "10mb" }));
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
   const PORT = 3000;
+
+  // Serve static uploads folder
+  const uploadsDir = path.join(process.cwd(), "public", "uploads");
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+  app.use("/uploads", express.static(uploadsDir));
+
+  // File persistence for listings
+  const dataDir = path.join(process.cwd(), "data");
+  const listingsFilePath = path.join(dataDir, "listings.json");
+
+  function getStoredListings(): any[] {
+    try {
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      if (fs.existsSync(listingsFilePath)) {
+        const content = fs.readFileSync(listingsFilePath, "utf-8");
+        return JSON.parse(content);
+      }
+    } catch (e) {
+      console.error("Error reading listings file:", e);
+    }
+    return [];
+  }
+
+  function saveStoredListings(listings: any[]) {
+    try {
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      fs.writeFileSync(listingsFilePath, JSON.stringify(listings, null, 2), "utf-8");
+    } catch (e) {
+      console.error("Error writing listings file:", e);
+    }
+  }
 
   // Initialize Gemini Client
   const getGeminiClient = () => {
@@ -243,6 +282,145 @@ INSTRUCTIONS & CONVERSIONS:
         success: false,
         error: "Failed to parse property text using AI.",
       });
+    }
+  });
+
+  // Image Upload API Route
+  app.post("/api/upload-image", (req, res) => {
+    try {
+      const { image } = req.body;
+      if (!image) {
+        return res.status(400).json({ success: false, error: "No image data provided" });
+      }
+
+      let buffer: Buffer;
+      let ext = "jpg";
+
+      if (image.startsWith("data:")) {
+        const matches = image.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
+        if (matches) {
+          ext = matches[1];
+          buffer = Buffer.from(matches[2], "base64");
+        } else {
+          const parts = image.split(",");
+          buffer = Buffer.from(parts[1] || parts[0], "base64");
+        }
+      } else {
+        buffer = Buffer.from(image, "base64");
+      }
+
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
+      const filePath = path.join(uploadsDir, fileName);
+      fs.writeFileSync(filePath, buffer);
+
+      const publicUrl = `/uploads/${fileName}`;
+      return res.json({ success: true, url: publicUrl });
+    } catch (err: any) {
+      console.error("Error in /api/upload-image:", err);
+      return res.status(500).json({ success: false, error: "Failed to upload image" });
+    }
+  });
+
+  // Get all listings
+  app.get("/api/listings", (req, res) => {
+    try {
+      const listings = getStoredListings();
+      return res.json({ success: true, data: listings });
+    } catch (err: any) {
+      console.error("Error in GET /api/listings:", err);
+      return res.status(500).json({ success: false, error: "Failed to fetch listings" });
+    }
+  });
+
+  // Get listing by slug
+  app.get("/api/listings/slug/:slug", (req, res) => {
+    try {
+      const slug = req.params.slug.toLowerCase().trim();
+      const listings = getStoredListings();
+      const match = listings.find((l: any) => l.slug.toLowerCase() === slug);
+      if (!match) {
+        return res.status(404).json({ success: false, error: "Listing not found" });
+      }
+      return res.json({ success: true, data: match });
+    } catch (err: any) {
+      console.error("Error in GET /api/listings/slug/:slug:", err);
+      return res.status(500).json({ success: false, error: "Failed to fetch listing by slug" });
+    }
+  });
+
+  // Get listing by ID
+  app.get("/api/listings/:id", (req, res) => {
+    try {
+      const id = req.params.id;
+      const listings = getStoredListings();
+      const match = listings.find((l: any) => l.id === id);
+      if (!match) {
+        return res.status(404).json({ success: false, error: "Listing not found" });
+      }
+      return res.json({ success: true, data: match });
+    } catch (err: any) {
+      console.error("Error in GET /api/listings/:id:", err);
+      return res.status(500).json({ success: false, error: "Failed to fetch listing by ID" });
+    }
+  });
+
+  // Save or update listing
+  app.post("/api/listings", (req, res) => {
+    try {
+      const listing = req.body;
+      if (!listing || !listing.id || !listing.slug) {
+        return res.status(400).json({ success: false, error: "Invalid listing object" });
+      }
+
+      // Process any inline base64 images
+      if (Array.isArray(listing.images)) {
+        listing.images = listing.images.map((img: any) => {
+          if (img.url && img.url.startsWith("data:image/")) {
+            try {
+              const matches = img.url.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
+              if (matches) {
+                const ext = matches[1];
+                const buffer = Buffer.from(matches[2], "base64");
+                const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
+                const filePath = path.join(uploadsDir, fileName);
+                fs.writeFileSync(filePath, buffer);
+                return { ...img, url: `/uploads/${fileName}` };
+              }
+            } catch (e) {
+              console.error("Failed to convert inline base64 image:", e);
+            }
+          }
+          return img;
+        });
+      }
+
+      const listings = getStoredListings();
+      const existingIdx = listings.findIndex((l: any) => l.id === listing.id || l.slug === listing.slug);
+      if (existingIdx >= 0) {
+        listings[existingIdx] = { ...listings[existingIdx], ...listing, updatedAt: new Date().toISOString() };
+      } else {
+        listings.unshift(listing);
+      }
+
+      saveStoredListings(listings);
+      return res.json({ success: true, data: listing });
+    } catch (err: any) {
+      console.error("Error in POST /api/listings:", err);
+      return res.status(500).json({ success: false, error: "Failed to save listing" });
+    }
+  });
+
+  // Delete listing
+  app.delete("/api/listings/:id", (req, res) => {
+    try {
+      const id = req.params.id;
+      let listings = getStoredListings();
+      listings = listings.filter((l: any) => l.id !== id);
+      saveStoredListings(listings);
+      return res.json({ success: true });
+    } catch (err: any) {
+      console.error("Error in DELETE /api/listings/:id:", err);
+      return res.status(500).json({ success: false, error: "Failed to delete listing" });
     }
   });
 

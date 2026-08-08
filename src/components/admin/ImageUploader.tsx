@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { PropertyImage } from '../../types';
 import { compressImage } from '../../lib/imageCompression';
+import { uploadImageToSupabaseStorage } from '../../lib/storage';
 import {
   autoOrganizeImages,
   detectCategory,
@@ -83,18 +84,24 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         const file = filesToProcess[i];
         if (!file.type.startsWith('image/')) continue;
 
-        const compressedDataUrl = await compressImage(file, {
-          maxWidth: 1920,
-          maxHeight: 1080,
-          quality: 0.85,
-        });
+        let permanentUrl: string;
+        try {
+          permanentUrl = await uploadImageToSupabaseStorage(file);
+        } catch (uploadErr) {
+          console.warn('Upload error, falling back to compression:', uploadErr);
+          permanentUrl = await compressImage(file, {
+            maxWidth: 1920,
+            maxHeight: 1080,
+            quality: 0.85,
+          });
+        }
 
         const caption = file.name.replace(/\.[^/.]+$/, '');
         const category = detectCategory(caption);
 
         newImages.push({
           id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-          url: compressedDataUrl,
+          url: permanentUrl,
           caption,
           category,
           isCover: false,

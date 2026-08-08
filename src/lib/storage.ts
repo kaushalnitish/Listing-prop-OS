@@ -75,9 +75,22 @@ function fromDbRow(row: any): PropertyListing {
 }
 
 export async function getListings(): Promise<PropertyListing[]> {
-  let dbListings: PropertyListing[] = [];
-  let dbSuccess = false;
+  let serverListings: PropertyListing[] = [];
 
+  // 1. Fetch from Backend Server API
+  try {
+    const res = await fetch('/api/listings');
+    const json = await res.json();
+    if (json.success && Array.isArray(json.data)) {
+      serverListings = json.data;
+    }
+  } catch (e) {
+    console.warn('Failed to fetch listings from backend API:', e);
+  }
+
+  let dbListings: PropertyListing[] = [];
+
+  // 2. Fetch from Supabase DB
   if (isSupabaseConfigured) {
     try {
       let { data, error } = await supabase
@@ -93,20 +106,18 @@ export async function getListings(): Promise<PropertyListing[]> {
 
       if (!error && data) {
         dbListings = data.map(fromDbRow);
-        dbSuccess = true;
       }
     } catch (e) {
-      console.warn('Supabase fetch failed, falling back to local storage', e);
+      console.warn('Supabase fetch error:', e);
     }
   }
 
-  // Local storage
+  // 3. Fetch from LocalStorage
   let localListings: PropertyListing[] = [];
   const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
   if (localData !== null) {
     try {
       const parsed: PropertyListing[] = JSON.parse(localData);
-      // Filter out legacy sample listings from prior sessions
       localListings = parsed.filter(
         (l) => l.id !== 'sample-villa-1' && l.slug !== 'the-grand-luminary-villa' && !l.id.startsWith('sample-')
       );
@@ -115,25 +126,32 @@ export async function getListings(): Promise<PropertyListing[]> {
     }
   }
 
-  if (dbSuccess) {
-    const dbIds = new Set(dbListings.map((l) => l.id));
-    const dbSlugs = new Set(dbListings.map((l) => l.slug));
+  // Combine results with deduplication (Server API > Supabase DB > LocalStorage)
+  const map = new Map<string, PropertyListing>();
 
-    const missingLocal = localListings.filter(
-      (l) => !dbIds.has(l.id) && !dbSlugs.has(l.slug)
-    );
+  localListings.forEach((l) => map.set(l.id, l));
+  dbListings.forEach((l) => map.set(l.id, l));
+  serverListings.forEach((l) => map.set(l.id, l));
 
-    return [...dbListings, ...missingLocal];
-  }
-
-  return localListings;
+  return Array.from(map.values());
 }
 
 export async function getListingBySlug(slug: string): Promise<PropertyListing | null> {
   if (!slug) return null;
   const normalizedSlug = slug.toLowerCase().trim();
 
-  // Direct Supabase fetch if configured
+  // 1. Try Backend Server API first
+  try {
+    const res = await fetch(`/api/listings/slug/${encodeURIComponent(normalizedSlug)}`);
+    const json = await res.json();
+    if (json.success && json.data) {
+      return json.data;
+    }
+  } catch (e) {
+    console.warn('Server API getListingBySlug error:', e);
+  }
+
+  // 2. Direct Supabase fetch if configured
   if (isSupabaseConfigured) {
     try {
       const { data, error } = await supabase
@@ -141,10 +159,6 @@ export async function getListingBySlug(slug: string): Promise<PropertyListing | 
         .select('*')
         .eq('slug', normalizedSlug)
         .maybeSingle();
-
-      if (error) {
-        console.error('Supabase query error during fetch:', error);
-      }
 
       if (!error && data) {
         return fromDbRow(data);
@@ -154,20 +168,27 @@ export async function getListingBySlug(slug: string): Promise<PropertyListing | 
     }
   }
 
-  // Fetch all listings (combines DB + LocalStorage)
+  // 3. Fallback to combined getListings()
   const listings = await getListings();
   const match = listings.find((item) => item.slug.toLowerCase() === normalizedSlug);
-
-  if (match) {
-    return match;
-  }
-
-  return null;
+  return match || null;
 }
 
 export async function getListingById(id: string): Promise<PropertyListing | null> {
   if (!id) return null;
 
+  // 1. Try Backend Server API first
+  try {
+    const res = await fetch(`/api/listings/${encodeURIComponent(id)}`);
+    const json = await res.json();
+    if (json.success && json.data) {
+      return json.data;
+    }
+  } catch (e) {
+    console.warn('Server API getListingById error:', e);
+  }
+
+  // 2. Direct Supabase fetch if configured
   if (isSupabaseConfigured) {
     try {
       const { data, error } = await supabase
@@ -184,8 +205,22 @@ export async function getListingById(id: string): Promise<PropertyListing | null
     }
   }
 
+  // 3. Fallback to combined getListings()
   const listings = await getListings();
   return listings.find((item) => item.id === id) || null;
+}
+
+function dataURLtoFile(dataurl: string, filename: string): File {
+  const arr = dataurl.split(',');
+  const mimeMatch = arr[0].match(/:(.*?);/);
+  const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], filename, { type: mime });
 }
 
 export async function saveListing(listing: PropertyListing): Promise<PropertyListing> {
@@ -200,7 +235,52 @@ export async function saveListing(listing: PropertyListing): Promise<PropertyLis
   if (!listing.createdAt) listing.createdAt = now;
   listing.updatedAt = now;
 
-  // 1. Try saving to Supabase if configured
+  // Process data:image/ and blob: URLs by uploading to server/Supabase
+  if (listing.images && listing.images.length > 0) {
+    const updatedImages = await Promise.all(
+      listing.images.map(async (img) => {
+        if (img.url && (img.url.startsWith('data:image/') || img.url.startsWith('blob:'))) {
+          try {
+            if (img.url.startsWith('data:image/')) {
+              const extMatch = img.url.match(/^data:image\/([a-zA-Z0-9]+);/);
+              const ext = extMatch ? extMatch[1] : 'jpeg';
+              const file = dataURLtoFile(img.url, `image-${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`);
+              const uploadedUrl = await uploadImageToSupabaseStorage(file);
+              return { ...img, url: uploadedUrl };
+            } else if (img.url.startsWith('blob:')) {
+              const blobRes = await fetch(img.url);
+              const blob = await blobRes.blob();
+              const file = new File([blob], `image-${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' });
+              const uploadedUrl = await uploadImageToSupabaseStorage(file);
+              return { ...img, url: uploadedUrl };
+            }
+          } catch (e) {
+            console.warn('Failed to convert image URL:', e);
+            return img;
+          }
+        }
+        return img;
+      })
+    );
+    listing.images = updatedImages;
+  }
+
+  // 1. Save to Backend Server API
+  try {
+    const apiRes = await fetch('/api/listings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(listing),
+    });
+    const apiJson = await apiRes.json();
+    if (apiJson.success && apiJson.data) {
+      listing = apiJson.data;
+    }
+  } catch (e) {
+    console.warn('Backend API save warning:', e);
+  }
+
+  // 2. Save to Supabase DB if configured
   if (isSupabaseConfigured) {
     try {
       const dbRow = toDbRow(listing);
@@ -210,7 +290,6 @@ export async function saveListing(listing: PropertyListing): Promise<PropertyLis
         .upsert([dbRow]);
 
       if (error) {
-        // Fallback 1: Try without optional SEO columns if schema lacks them
         const basicRow = {
           id: listing.id,
           slug: listing.slug,
@@ -235,31 +314,6 @@ export async function saveListing(listing: PropertyListing): Promise<PropertyLis
       }
 
       if (error) {
-        // Fallback 2: Try camelCase field names if table schema uses camelCase
-        const camelRow = {
-          id: listing.id,
-          slug: listing.slug,
-          title: listing.title,
-          tagline: listing.tagline || null,
-          price: listing.price || 0,
-          currency: listing.currency || '₹',
-          specs: listing.specs || {},
-          location: listing.location || {},
-          description: listing.description || '',
-          highlights: listing.highlights || [],
-          amenities: listing.amenities || [],
-          images: listing.images || [],
-          contact: listing.contact || {},
-          status: listing.status || 'published',
-          createdAt: listing.createdAt || now,
-          updatedAt: listing.updatedAt || now,
-        };
-
-        const res3 = await supabase.from('listings').upsert([camelRow]);
-        error = res3.error;
-      }
-
-      if (error) {
         console.warn('Supabase write notice:', error.message || error);
       }
     } catch (e) {
@@ -267,7 +321,7 @@ export async function saveListing(listing: PropertyListing): Promise<PropertyLis
     }
   }
 
-  // 2. Always sync to Local Storage for instant local resolution
+  // 3. Sync to Local Storage as fast client cache
   let localListings: PropertyListing[] = [];
   try {
     const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -286,27 +340,22 @@ export async function saveListing(listing: PropertyListing): Promise<PropertyLis
     localListings.unshift(listing);
   }
 
-  // Clean images to prevent Base64 bloat in localStorage
-  const sanitizedListings = localListings.map((l) => ({
-    ...l,
-    images: (l.images || []).map((img) => ({
-      ...img,
-      url: img.url.startsWith('data:image/') && img.url.length > 100000
-        ? 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=80'
-        : img.url
-    }))
-  }));
-
   try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(sanitizedListings));
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(localListings));
   } catch (err) {
-    console.warn('localStorage quota exceeded:', err);
+    console.warn('localStorage quota warning:', err);
   }
 
   return listing;
 }
 
 export async function deleteListing(id: string): Promise<boolean> {
+  try {
+    await fetch(`/api/listings/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  } catch (e) {
+    console.warn('Server API delete error:', e);
+  }
+
   if (isSupabaseConfigured) {
     try {
       await supabase.from('listings').delete().eq('id', id);
@@ -317,7 +366,11 @@ export async function deleteListing(id: string): Promise<boolean> {
 
   const listings = await getListings();
   const filtered = listings.filter((item) => item.id !== id);
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(filtered));
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(filtered));
+  } catch (e) {
+    console.warn('localStorage set error:', e);
+  }
   return true;
 }
 
@@ -346,6 +399,28 @@ export async function uploadImageToSupabaseStorage(file: File): Promise<string> 
     }
   }
 
-  // Lightweight Blob URL for session preview (Prevents 5MB+ Base64 strings from crashing localStorage)
+  // Upload to backend server endpoint for permanent storage URL
+  try {
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    const res = await fetch('/api/upload-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: base64, name: file.name }),
+    });
+
+    const json = await res.json();
+    if (json.success && json.url) {
+      return json.url;
+    }
+  } catch (err) {
+    console.error('Server upload failed:', err);
+  }
+
   return URL.createObjectURL(file);
 }

@@ -15,6 +15,8 @@ import {
   FileText,
   Clock,
   Filter,
+  RotateCcw,
+  X,
 } from 'lucide-react';
 import { getListings, saveListing, deleteListing } from '../../lib/storage';
 import { PropertyListing } from '../../types';
@@ -23,6 +25,19 @@ export const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [listings, setListings] = useState<PropertyListing[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Toast Notification state
+  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'info'; message: string } | null>(null);
+
+  // Auto dismiss toast after 6 seconds
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => {
+        setToastMessage(null);
+      }, 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,40 +64,84 @@ export const AdminDashboardPage: React.FC = () => {
       item.slug.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus =
-      statusFilter === 'all' || item.status === statusFilter;
+      statusFilter === 'all'
+        ? true
+        : item.status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
 
   // Action Handlers
-  const handleDuplicate = async (item: PropertyListing) => {
-    const newId = `listing-${Date.now()}`;
-    const newSlug = `${item.slug}-copy-${Math.floor(Math.random() * 1000)}`;
+  const handleCopyLink = async (item: PropertyListing) => {
+    if (item.status !== 'published') {
+      setToastMessage({
+        type: 'info',
+        message: 'Only published listings have a public link.',
+      });
+      return;
+    }
 
-    const duplicatedItem: PropertyListing = {
-      ...item,
-      id: newId,
-      slug: newSlug,
-      title: `${item.title} (Copy)`,
-      status: 'draft',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    await saveListing(duplicatedItem);
-    await fetchListingsData();
+    const publicUrl = `${window.location.origin}/p/${item.slug}`;
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      setToastMessage({
+        type: 'success',
+        message: 'Listing link copied',
+      });
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+    }
   };
 
-  const handleToggleArchive = async (item: PropertyListing) => {
-    const newStatus = item.status === 'archived' ? 'draft' : 'archived';
-    const updatedItem: PropertyListing = {
-      ...item,
-      status: newStatus,
-      updatedAt: new Date().toISOString(),
-    };
+  // Archive Modal State
+  const [itemToArchive, setItemToArchive] = useState<PropertyListing | null>(null);
+  const [isArchiving, setIsArchiving] = useState(false);
 
-    await saveListing(updatedItem);
-    await fetchListingsData();
+  const handleArchiveRequest = (item: PropertyListing) => {
+    setItemToArchive(item);
+  };
+
+  const confirmArchive = async () => {
+    if (!itemToArchive) return;
+    setIsArchiving(true);
+    try {
+      const updatedItem: PropertyListing = {
+        ...itemToArchive,
+        status: 'archived',
+        updatedAt: new Date().toISOString(),
+      };
+
+      await saveListing(updatedItem);
+      await fetchListingsData();
+      setToastMessage({
+        type: 'info',
+        message: 'Listing archived. It is no longer publicly visible. You can republish it anytime from Archived Listings.',
+      });
+    } catch (err) {
+      console.error('Failed to archive listing:', err);
+    } finally {
+      setIsArchiving(false);
+      setItemToArchive(null);
+    }
+  };
+
+  const handleRepublish = async (item: PropertyListing) => {
+    try {
+      const updatedItem: PropertyListing = {
+        ...item,
+        status: 'published',
+        updatedAt: new Date().toISOString(),
+      };
+
+      await saveListing(updatedItem);
+      await fetchListingsData();
+      setToastMessage({
+        type: 'success',
+        message: 'Listing republished successfully. It is now live and publicly accessible.',
+      });
+    } catch (err) {
+      console.error('Failed to republish listing:', err);
+    }
   };
 
   // Delete confirmation state
@@ -104,6 +163,10 @@ export const AdminDashboardPage: React.FC = () => {
       );
       await deleteListing(targetId);
       await fetchListingsData();
+      setToastMessage({
+        type: 'info',
+        message: 'Listing permanently deleted.',
+      });
     } catch (err) {
       console.error('Failed to delete listing:', err);
     } finally {
@@ -122,7 +185,7 @@ export const AdminDashboardPage: React.FC = () => {
               Property Listings Portfolio
             </h1>
             <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-              Internal agency management — Search, publish, edit and duplicate luxury property listings
+              Internal agency management — Search, publish, edit, archive and manage property listings
             </p>
           </div>
           <Link
@@ -154,7 +217,6 @@ export const AdminDashboardPage: React.FC = () => {
               [
                 { key: 'all', label: 'All Listings' },
                 { key: 'published', label: 'Published' },
-                { key: 'draft', label: 'Drafts' },
                 { key: 'archived', label: 'Archived' },
               ] as const
             ).map((tab) => (
@@ -226,17 +288,17 @@ export const AdminDashboardPage: React.FC = () => {
                   </div>
 
                   {/* Status Badge */}
-                  <div
-                    className={`absolute top-3 right-3 text-[10px] uppercase font-extrabold px-2.5 py-0.5 rounded-full backdrop-blur-md border shadow-md ${
-                      item.status === 'published'
-                        ? 'bg-emerald-950/90 text-emerald-400 border-emerald-500/40'
-                        : item.status === 'archived'
-                        ? 'bg-zinc-900/90 text-zinc-400 border-zinc-700'
-                        : 'bg-amber-950/90 text-amber-400 border-amber-500/40'
-                    }`}
-                  >
-                    {item.status}
-                  </div>
+                  {item.status !== 'draft' && (
+                    <div
+                      className={`absolute top-3 right-3 text-[10px] uppercase font-extrabold px-2.5 py-0.5 rounded-full backdrop-blur-md border shadow-md ${
+                        item.status === 'published'
+                          ? 'bg-emerald-950/90 text-emerald-400 border-emerald-500/40'
+                          : 'bg-zinc-900/90 text-zinc-400 border-zinc-700'
+                      }`}
+                    >
+                      {item.status}
+                    </div>
+                  )}
                 </div>
 
                 {/* Card Details */}
@@ -259,17 +321,15 @@ export const AdminDashboardPage: React.FC = () => {
 
                     <div className="flex items-center gap-1.5">
                       {/* View Link */}
-                      {item.status === 'published' && (
-                        <a
-                          href={`/p/${item.slug}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-colors"
-                          title="View Live Page"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </a>
-                      )}
+                      <a
+                        href={`/p/${item.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-colors"
+                        title="View Public Page"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </a>
 
                       {/* Edit Button */}
                       <Link
@@ -280,27 +340,33 @@ export const AdminDashboardPage: React.FC = () => {
                         <Edit3 className="w-3.5 h-3.5" />
                       </Link>
 
-                      {/* Duplicate Button */}
+                      {/* Copy Public Link Button */}
                       <button
-                        onClick={() => handleDuplicate(item)}
+                        onClick={() => handleCopyLink(item)}
                         className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-colors"
-                        title="Duplicate Listing"
+                        title="Copy Public Link"
                       >
                         <Copy className="w-3.5 h-3.5" />
                       </button>
 
-                      {/* Archive Button */}
-                      <button
-                        onClick={() => handleToggleArchive(item)}
-                        className={`p-2 rounded-lg transition-colors ${
-                          item.status === 'archived'
-                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
-                            : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200'
-                        }`}
-                        title={item.status === 'archived' ? 'Unarchive Listing' : 'Archive Listing'}
-                      >
-                        <Archive className="w-3.5 h-3.5" />
-                      </button>
+                      {/* Archive / Republish Button */}
+                      {item.status === 'archived' ? (
+                        <button
+                          onClick={() => handleRepublish(item)}
+                          className="p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-colors flex items-center gap-1"
+                          title="Republish Listing"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleArchiveRequest(item)}
+                          className="p-2 rounded-lg bg-zinc-800 hover:bg-amber-500/20 hover:text-amber-400 text-zinc-200 transition-colors"
+                          title="Archive Listing"
+                        >
+                          <Archive className="w-3.5 h-3.5" />
+                        </button>
+                      )}
 
                       {/* Delete Button */}
                       <button
@@ -315,6 +381,97 @@ export const AdminDashboardPage: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Toast Notification Banner */}
+        {toastMessage && (
+          <div className="fixed top-6 right-6 z-50 max-w-md w-full animate-in slide-in-from-top-4 fade-in duration-300">
+            <div
+              className={`p-4 rounded-xl border shadow-2xl backdrop-blur-md flex items-start justify-between gap-3 ${
+                toastMessage.type === 'success'
+                  ? 'bg-emerald-950/95 border-emerald-500/40 text-emerald-100'
+                  : 'bg-zinc-900/95 border-amber-500/40 text-zinc-100'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <CheckCircle2
+                  className={`w-5 h-5 shrink-0 mt-0.5 ${
+                    toastMessage.type === 'success' ? 'text-emerald-400' : 'text-amber-400'
+                  }`}
+                />
+                <p className="text-xs font-medium leading-relaxed">{toastMessage.message}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setToastMessage(null)}
+                className="text-zinc-400 hover:text-zinc-100 p-1 rounded-lg hover:bg-white/10 transition-colors shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Archive Confirmation Modal */}
+        {itemToArchive && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400">
+                  <Archive className="w-6 h-6" />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => !isArchiving && setItemToArchive(null)}
+                  className="text-zinc-400 hover:text-zinc-200 text-sm p-1 rounded-lg hover:bg-zinc-800 transition-colors"
+                  disabled={isArchiving}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-zinc-100">Archive Listing?</h3>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Archive this listing? It will no longer be visible publicly, but you can republish it anytime from Archived Listings.
+                </p>
+              </div>
+
+              <div className="p-3 bg-zinc-950/80 border border-zinc-800/80 rounded-xl text-xs space-y-1">
+                <span className="font-semibold text-zinc-200 block truncate">{itemToArchive.title}</span>
+                <span className="text-zinc-500 block truncate font-mono">ID: {itemToArchive.id}</span>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setItemToArchive(null)}
+                  disabled={isArchiving}
+                  className="px-4 py-2 rounded-xl border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmArchive}
+                  disabled={isArchiving}
+                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold transition-all shadow-lg shadow-amber-500/20 inline-flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {isArchiving ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />
+                      <span>Archiving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Archive className="w-3.5 h-3.5" />
+                      <span>Archive Listing</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

@@ -86,7 +86,7 @@ async function startServer() {
       const ai = getGeminiClient();
 
       const userInstructions = `
-Please generate complete, high-converting luxury copy for a ${propertyType} listing.
+Please generate complete, well-written real estate copy for a ${propertyType} listing.
 - Location: ${location}
 ${price ? `- Price: $${price}` : ""}
 ${bedrooms ? `- Bedrooms: ${bedrooms}` : ""}
@@ -95,13 +95,17 @@ ${squareFeet ? `- Square Feet: ${squareFeet} sq ft` : ""}
 ${existingTitle ? `- Current Title Draft: "${existingTitle}"` : ""}
 ${prompt ? `- Specific Notes / Vision: ${prompt}` : ""}
 
-Craft evocative, world-class real estate copy in the style of Architectural Digest and Sotheby's International Realty.
+Craft natural, authentic, professional real estate copy as an experienced human agent would write.
+CRITICAL TONE & COPYWRITING INSTRUCTIONS:
+- Do NOT use generic AI real-estate cliches or marketing fluff (e.g., avoid "unparalleled luxury", "world-class", "curated for discerning buyers", "epitome of", "extraordinary masterpiece", "sophisticated lifestyle").
+- Keep descriptions specific, clear, natural, and grounded in real property details (light, room flow, materials, storage, neighborhood accessibility).
+
 Include:
-1. Title: Bold, iconic name for the estate.
-2. Subtitle / Tagline: Poetic, evocative headline.
-3. Description: 2-3 immersive paragraphs highlighting natural light, master craftsmanship, finishes, indoor-outdoor flow, and private sanctuary lifestyle.
-4. Highlights: 4-6 bullet points of top standout architectural / vista features.
-5. Amenities: 6-10 premium amenities (e.g., Infinity Pool, Wine Cellar, Smart Home Automation, Spa & Sauna, Private Elevator).
+1. Title: Clear, descriptive property title.
+2. Subtitle / Tagline: Informative, concise subhead.
+3. Description: 2-3 clean, engaging paragraphs highlighting spatial flow, natural lighting, finishes, outdoor integration, and location convenience.
+4. Highlights: 4-6 bullet points of top standout property features.
+5. Amenities: 6-10 key amenities (e.g., Gated Community, Covered Parking, Modular Kitchen, Private Balcony, High-Speed Elevators).
 6. SEO Title: High-intent search title under 60 chars.
 7. Meta Description: High-converting search summary under 155 chars.
       `;
@@ -111,7 +115,7 @@ Include:
         contents: userInstructions,
         config: {
           systemInstruction:
-            "You are an elite luxury real estate copywriter for global UHNW properties. Return structured JSON with high-converting, refined prose.",
+            "You are an experienced professional real estate copywriter. Write clear, natural, and human property descriptions. Avoid AI cliché hype phrases like 'unparalleled luxury', 'world-class', 'curated for discerning buyers', or 'epitome of luxury'. Return structured JSON.",
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -203,11 +207,11 @@ INSTRUCTIONS & CONVERSIONS:
 3. If price is expressed in Indian Lakhs (e.g. "65.90" or "65.90 Lakhs"), convert 65.90 Lakhs = 65,90,000 INR (number: 6590000, currency: "₹", priceFormatted: "₹65.90 Lakhs"). If price is in USD or unspecified currency, detect appropriately. If no price is mentioned, set price to null and add "price" to missingFields.
 3. If area is given in "Gaj" or "Sq Yards" (e.g. "138 Gaj"), calculate squareFeet = 138 * 9 = 1242, and set areaText to "138 Gaj (1,242 Sq. Ft.)". If in Sq Ft, use directly.
 4. "3 BHK" -> bedrooms: 3. If bathrooms are not explicitly mentioned, estimate or set bathrooms to null and add "bathrooms" to missingFields.
-5. Create a catchy, high-end Title (e.g., "Luxury 3 BHK Independent Floor in Gated Society").
-6. Create an evocative Tagline (e.g., "Modern Architecture Near Chandigarh Kharar Highway").
+5. Create a clear, specific Title (e.g., "3 BHK Independent Floor in Gated Society").
+6. Create an informative Tagline (e.g., "Modern Construction Near Chandigarh Kharar Highway").
 7. Extract all amenities (e.g., ["Gated Society", "45ft RCC Roads", "5 Years Wooden Work Warranty", "1 Year After Sales Service"]).
 8. Extract key highlights (3-6 bullet points highlighting standout features).
-9. Write a polished 2-paragraph narrative story description highlighting quality, location, warranty, and layout.
+9. Write a polished 2-paragraph narrative story description highlighting quality, location, warranty, and layout in natural human tone without cliché AI hype (avoid "unparalleled luxury", "world-class", "curated for discerning buyers", etc.).
 10. Extract any phone/WhatsApp numbers (e.g. "7973318763").
 11. Generate an SEO Title and Meta Description.
 12. List all missing or low-confidence fields in missingFields array (e.g., "price", "bathrooms", "city").

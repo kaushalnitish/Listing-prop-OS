@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PropertyListing } from '../../types';
 import { saveListing } from '../../lib/storage';
+import { parsePropertyDetailsWithAi } from '../../lib/aiParser';
 import { ImageUploader } from './ImageUploader';
 import { AmenitiesSelector } from './AmenitiesSelector';
 import { ListingPreviewModal } from './ListingPreviewModal';
@@ -130,10 +131,10 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
 
   // Contact
   const [agentName, setAgentName] = useState(
-    initialData?.contact?.agentName || 'Premier Luxury Agent'
+    initialData?.contact?.agentName || 'Property Representative'
   );
   const [agentRole, setAgentRole] = useState(
-    initialData?.contact?.agentRole || 'Senior Estate Consultant'
+    initialData?.contact?.agentRole || 'Real Estate Agent'
   );
   const [phone, setPhone] = useState(initialData?.contact?.phone || '');
   const [whatsappNumber, setWhatsappNumber] = useState(
@@ -143,7 +144,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
     initialData?.contact?.email || 'contact@propertyestates.com'
   );
   const [agencyName, setAgencyName] = useState(
-    initialData?.contact?.agencyName || 'Luxury Real Estate Group'
+    initialData?.contact?.agencyName || 'Property Advisory Group'
   );
 
   // Handle Description Extraction
@@ -155,15 +156,10 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
 
     setParsingAi(true);
     try {
-      const res = await fetch('/api/parse-whatsapp-listing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rawText }),
-      });
+      const result = await parsePropertyDetailsWithAi(rawText);
 
-      const json = await res.json();
-      if (json.success && json.data) {
-        const data = json.data;
+      if (result.success && result.data) {
+        const data = result.data;
 
         // Auto-fill extracted values
         if (data.title) setTitle(data.title);
@@ -207,7 +203,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
         setExtractedStatus('Details extracted successfully');
         setCurrentStep(3); // Advance to Preview Step
       } else {
-        alert(json.error || 'Failed to process property details. Please try again.');
+        alert(result.error || 'Failed to process property details. Please try again.');
       }
     } catch (err) {
       console.error('Property details parsing error:', err);
@@ -240,13 +236,13 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
 
   // Construct complete listing object
   const buildListingObject = (targetStatus: 'draft' | 'published'): PropertyListing => {
-    const generatedSlug = initialData?.slug || generateSlug(title || 'luxury-property');
+    const generatedSlug = initialData?.slug || generateSlug(title || 'property-listing');
     const listingId = initialData?.id || `listing-${Date.now()}`;
 
     return {
       id: listingId,
       slug: generatedSlug,
-      title: title.trim() || 'Luxury Property Listing',
+      title: title.trim() || 'Property Listing',
       tagline: tagline.trim() || undefined,
       price: typeof price === 'number' ? price : 0,
       currency: currency || '₹',
@@ -266,7 +262,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
         country: country.trim() || 'India',
         googleMapsUrl: googleMapsUrl.trim() || undefined,
       },
-      description: description.trim() || 'Exquisite modern luxury property featuring premium wooden craftsmanship and gated security.',
+      description: description.trim() || 'Well-built 3 BHK property featuring quality interior woodwork, modern layout, and gated society security.',
       highlights: highlights.filter((h) => h.trim() !== ''),
       amenities: amenities.length > 0 ? amenities : ['Gated Society', '45ft RCC Roads', '5 Years Warranty'],
       images,
@@ -802,7 +798,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Luxury 3 BHK Independent Floor in Gated Society"
+                      placeholder="e.g. 3 BHK Independent Floor in Gated Society"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-amber-500 transition-colors"

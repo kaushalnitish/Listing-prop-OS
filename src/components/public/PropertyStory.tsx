@@ -125,7 +125,7 @@ export const PropertyStory: React.FC<PropertyStoryProps> = ({
       {amenities.length > 0 && (
         <div className="space-y-4 pt-4 border-t border-white/[0.08]">
           <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">
-            Estate Amenities
+            Property Amenities
           </h2>
 
           <div className="flex flex-wrap gap-2 sm:gap-2.5">

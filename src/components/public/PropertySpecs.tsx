@@ -86,35 +86,50 @@ export const PropertySpecs: React.FC<PropertySpecsProps> = ({
         </div>
       </div>
 
-      {/* Key Architectural Specs Bar */}
-      <div className="border-y border-white/[0.08] py-6 sm:py-8 grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8">
-        <div>
-          <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.18em] text-zinc-500">Bedrooms</p>
-          <p className="text-xl sm:text-2xl font-light text-zinc-100 mt-1">
-            {safeBedrooms}
-          </p>
-        </div>
+      {/* Key Architectural Specs Bar — Frosted Glassmorphism Panel */}
+      <div className="relative rounded-2xl bg-zinc-900/40 backdrop-blur-md border border-white/[0.08] p-5 sm:p-6 lg:p-7 shadow-2xl shadow-black/40 overflow-hidden">
+        {/* Frosted architectural glass gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] via-transparent to-transparent pointer-events-none" />
 
-        <div>
-          <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.18em] text-zinc-500">Bathrooms</p>
-          <p className="text-xl sm:text-2xl font-light text-zinc-100 mt-1">
-            {safeBathrooms}
-          </p>
-        </div>
+        <div className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+          <div>
+            <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.18em] text-zinc-500">
+              Bedrooms
+            </p>
+            <p className="text-xl sm:text-2xl font-light text-zinc-100 mt-1">
+              {safeBedrooms}
+            </p>
+          </div>
 
-        <div>
-          <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.18em] text-zinc-500">Living Area</p>
-          <p className="text-xl sm:text-2xl font-light text-zinc-100 mt-1">
-            {safeSqFt}{' '}
-            {safeSqFt !== '—' && <span className="text-xs text-zinc-500 font-normal">sq ft</span>}
-          </p>
-        </div>
+          <div>
+            <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.18em] text-zinc-500">
+              Bathrooms
+            </p>
+            <p className="text-xl sm:text-2xl font-light text-zinc-100 mt-1">
+              {safeBathrooms}
+            </p>
+          </div>
 
-        <div>
-          <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.18em] text-zinc-500">Property Type</p>
-          <p className="text-base sm:text-lg font-light text-zinc-100 mt-1 truncate">
-            {safePropertyType}
-          </p>
+          <div>
+            <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.18em] text-zinc-500">
+              Living Area
+            </p>
+            <p className="text-xl sm:text-2xl font-light text-zinc-100 mt-1">
+              {safeSqFt}{' '}
+              {safeSqFt !== '—' && (
+                <span className="text-xs text-zinc-500 font-normal">sq ft</span>
+              )}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.18em] text-zinc-500">
+              Property Type
+            </p>
+            <p className="text-base sm:text-lg font-light text-zinc-100 mt-1 break-words">
+              {safePropertyType}
+            </p>
+          </div>
         </div>
       </div>
 

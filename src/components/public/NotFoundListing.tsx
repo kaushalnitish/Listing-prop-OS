@@ -21,22 +21,14 @@ export const NotFoundListing: React.FC<NotFoundListingProps> = ({ requestedSlug 
           Estate Listing Unavailable
         </h1>
         <p className="text-xs text-zinc-400 leading-relaxed">
-          The requested luxury listing page {requestedSlug && <code className="font-mono text-amber-300/90">/p/{requestedSlug}</code>} could not be found or has been moved.
+          The requested property listing page {requestedSlug && <code className="font-mono text-amber-300/90">/p/{requestedSlug}</code>} could not be found or has been moved.
         </p>
       </div>
 
       <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 w-full">
         <Link
-          to="/p/the-grand-luminary-villa"
-          className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/20"
-        >
-          <Sparkles className="w-4 h-4" />
-          <span>View Sample Estate</span>
-        </Link>
-
-        <Link
           to="/admin"
-          className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 font-medium text-xs flex items-center justify-center gap-2 transition-colors"
+          className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/20"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Agency Dashboard</span>

@@ -17,7 +17,6 @@ import {
   ExternalLink,
   Eye,
   X,
-  Lock,
 } from 'lucide-react';
 
 interface ListingPreviewModalProps {
@@ -73,17 +72,7 @@ export const ListingPreviewModal: React.FC<ListingPreviewModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950 flex flex-col">
       {/* 1. Top Publishing Controls Bar */}
-      <div className="sticky top-0 z-50 bg-zinc-950/90 backdrop-blur-xl border-b border-zinc-800/90 p-3 sm:p-4 px-4 sm:px-8 shadow-2xl flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold uppercase tracking-wider">
-            <Lock className="w-3 h-3 text-amber-400" />
-            <span>Unpublished Preview</span>
-          </div>
-          <span className="hidden md:inline text-xs text-zinc-400 border-l border-zinc-800 pl-3">
-            Draft mode — Not accessible to the public until published
-          </span>
-        </div>
-
+      <div className="sticky top-0 z-50 bg-zinc-950/90 backdrop-blur-xl border-b border-zinc-800/90 p-3 sm:p-4 px-4 sm:px-8 shadow-2xl flex items-center justify-end gap-3">
         {/* Action Buttons */}
         <div className="flex items-center gap-2.5">
           <button
@@ -188,7 +177,7 @@ export const ListingPreviewModal: React.FC<ListingPreviewModalProps> = ({
                 Listing Published Successfully!
               </h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Your luxury property is now live and accessible via its public URL.
+                Your property listing is now live and accessible via its public URL.
               </p>
             </div>
 

@@ -27,7 +27,7 @@ export const PublicListingPage: React.FC = () => {
   useEffect(() => {
     if (!listing) return;
 
-    const pageTitle = listing.seoTitle || `${listing.title} | ${listing.location?.city || 'Luxury'} Real Estate`;
+    const pageTitle = listing.seoTitle || `${listing.title} | ${listing.location?.city || 'Property'} Real Estate`;
     const metaDesc = listing.metaDescription || listing.tagline || listing.description?.slice(0, 155) || '';
     const coverImage = listing.images?.find((img) => img.isCover)?.url || listing.images?.[0]?.url || '';
 
@@ -55,7 +55,7 @@ export const PublicListingPage: React.FC = () => {
     if (coverImage) setMetaTag('meta[name="twitter:image"]', 'name', 'twitter:image', coverImage);
 
     return () => {
-      document.title = 'Lumina Studio | Luxury Real Estate';
+      document.title = 'Property Showcase | Real Estate';
     };
   }, [listing]);
 

@@ -19,91 +19,117 @@ export const PropertySpecs: React.FC<PropertySpecsProps> = ({
   specs,
   location,
 }) => {
-  const formattedPrice = new Intl.NumberFormat('en-US').format(price);
+  const formattedPrice =
+    typeof price === 'number' && !isNaN(price) && price >= 0
+      ? new Intl.NumberFormat('en-US').format(price)
+      : '—';
 
   const locationText = [
-    location.neighborhood,
-    location.city,
-    location.state,
-    location.country,
+    location?.neighborhood,
+    location?.city,
+    location?.state,
+    location?.country,
   ]
     .filter(Boolean)
     .join(' • ');
 
-  return (
-    <div className="space-y-10 sm:space-y-12">
-      {/* Title & Headline Block */}
-      <div className="space-y-4 max-w-4xl">
-        <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-zinc-400">
-          <MapPin className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-          <span>{locationText}</span>
-        </div>
+  // Sanitize spec values to avoid negative/invalid data such as "-13"
+  const safeBedrooms =
+    typeof specs?.bedrooms === 'number' && !isNaN(specs.bedrooms) && specs.bedrooms >= 0
+      ? specs.bedrooms
+      : '—';
 
-        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-light tracking-tight text-white leading-[1.1]">
+  const safeBathrooms =
+    typeof specs?.bathrooms === 'number' && !isNaN(specs.bathrooms) && specs.bathrooms >= 0
+      ? specs.bathrooms
+      : '—';
+
+  const safeSqFt =
+    typeof specs?.squareFeet === 'number' && !isNaN(specs.squareFeet) && specs.squareFeet > 0
+      ? new Intl.NumberFormat('en-US').format(specs.squareFeet)
+      : '—';
+
+  const safePropertyType = specs?.propertyType || 'Residential';
+
+  const hasYearBuilt = typeof specs?.yearBuilt === 'number' && specs.yearBuilt > 1800;
+  const hasParking = typeof specs?.parkingSpaces === 'number' && specs.parkingSpaces > 0;
+
+  return (
+    <div className="space-y-8 sm:space-y-10">
+      {/* Title & Headline Block */}
+      <div className="space-y-3 sm:space-y-4 max-w-3xl">
+        {locationText && (
+          <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">
+            <MapPin className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+            <span className="truncate">{locationText}</span>
+          </div>
+        )}
+
+        <h1 className="text-2xl sm:text-4xl lg:text-5xl font-light tracking-tight text-white leading-[1.15] break-words">
           {title}
         </h1>
 
         {tagline && (
-          <p className="text-base sm:text-lg text-zinc-400 font-normal leading-relaxed pt-1">
+          <p className="text-sm sm:text-base text-zinc-400 font-normal leading-relaxed pt-0.5">
             {tagline}
           </p>
         )}
 
-        {/* Price Presentation - Understated & High-End */}
+        {/* Price Presentation - Integrated & Understated */}
         <div className="pt-2 flex items-baseline gap-3">
-          <span className="text-xs uppercase tracking-widest font-mono text-zinc-400">
+          <span className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">
             Offered At
           </span>
-          <span className="text-2xl sm:text-3xl font-light text-white tracking-tight">
+          <span className="text-xl sm:text-2xl font-light text-zinc-100 tracking-tight">
             {currency}{formattedPrice}
           </span>
         </div>
       </div>
 
       {/* Key Architectural Specs Bar */}
-      <div className="border-y border-zinc-800/80 py-8 grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8">
+      <div className="border-y border-white/[0.08] py-6 sm:py-8 grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8">
         <div>
-          <p className="text-[11px] font-mono uppercase tracking-widest text-zinc-400">Bedrooms</p>
-          <p className="text-2xl sm:text-3xl font-light text-white mt-1">
-            {specs.bedrooms}
+          <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.18em] text-zinc-500">Bedrooms</p>
+          <p className="text-xl sm:text-2xl font-light text-zinc-100 mt-1">
+            {safeBedrooms}
           </p>
         </div>
 
         <div>
-          <p className="text-[11px] font-mono uppercase tracking-widest text-zinc-400">Bathrooms</p>
-          <p className="text-2xl sm:text-3xl font-light text-white mt-1">
-            {specs.bathrooms}
+          <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.18em] text-zinc-500">Bathrooms</p>
+          <p className="text-xl sm:text-2xl font-light text-zinc-100 mt-1">
+            {safeBathrooms}
           </p>
         </div>
 
         <div>
-          <p className="text-[11px] font-mono uppercase tracking-widest text-zinc-400">Living Area</p>
-          <p className="text-2xl sm:text-3xl font-light text-white mt-1">
-            {new Intl.NumberFormat('en-US').format(specs.squareFeet)}{' '}
-            <span className="text-xs text-zinc-400 font-normal">sq ft</span>
+          <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.18em] text-zinc-500">Living Area</p>
+          <p className="text-xl sm:text-2xl font-light text-zinc-100 mt-1">
+            {safeSqFt}{' '}
+            {safeSqFt !== '—' && <span className="text-xs text-zinc-500 font-normal">sq ft</span>}
           </p>
         </div>
 
         <div>
-          <p className="text-[11px] font-mono uppercase tracking-widest text-zinc-400">Property Type</p>
-          <p className="text-lg sm:text-xl font-light text-white mt-1 truncate">
-            {specs.propertyType}
+          <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.18em] text-zinc-500">Property Type</p>
+          <p className="text-base sm:text-lg font-light text-zinc-100 mt-1 truncate">
+            {safePropertyType}
           </p>
         </div>
       </div>
 
       {/* Secondary Details (Built year & Parking) */}
-      {(specs.yearBuilt || specs.parkingSpaces) && (
+      {(hasYearBuilt || hasParking) && (
         <div className="flex flex-wrap items-center gap-6 text-xs text-zinc-400 font-mono tracking-wider">
-          {specs.yearBuilt && (
+          {hasYearBuilt && (
             <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-zinc-400" />
+              <Calendar className="w-3.5 h-3.5 text-zinc-500" />
               <span>Year Built: {specs.yearBuilt}</span>
             </div>
           )}
-          {specs.parkingSpaces && (
+          {hasParking && (
             <div className="flex items-center gap-2">
-              <Car className="w-4 h-4 text-zinc-400" />
+              <Car className="w-3.5 h-3.5 text-zinc-500" />
               <span>Garage Spaces: {specs.parkingSpaces}</span>
             </div>
           )}
@@ -112,4 +138,5 @@ export const PropertySpecs: React.FC<PropertySpecsProps> = ({
     </div>
   );
 };
+
 

@@ -76,6 +76,7 @@ function fromDbRow(row: any): PropertyListing {
 
 export async function getListings(): Promise<PropertyListing[]> {
   let serverListings: PropertyListing[] = [];
+  let serverSuccess = false;
 
   // 1. Fetch from Backend Server API
   try {
@@ -83,6 +84,7 @@ export async function getListings(): Promise<PropertyListing[]> {
     const json = await res.json();
     if (json.success && Array.isArray(json.data)) {
       serverListings = json.data;
+      serverSuccess = true;
     }
   } catch (e) {
     console.warn('Failed to fetch listings from backend API:', e);
@@ -126,14 +128,41 @@ export async function getListings(): Promise<PropertyListing[]> {
     }
   }
 
-  // Combine results with deduplication (Server API > Supabase DB > LocalStorage)
-  const map = new Map<string, PropertyListing>();
+  let combined: PropertyListing[] = [];
+  if (serverSuccess) {
+    combined = [...serverListings];
+    const existingIds = new Set(combined.map((l) => l.id));
+    const existingSlugs = new Set(combined.map((l) => l.slug.toLowerCase()));
 
-  localListings.forEach((l) => map.set(l.id, l));
-  dbListings.forEach((l) => map.set(l.id, l));
-  serverListings.forEach((l) => map.set(l.id, l));
+    for (const item of [...dbListings, ...localListings]) {
+      if (!existingIds.has(item.id) && !existingSlugs.has(item.slug.toLowerCase())) {
+        combined.push(item);
+        existingIds.add(item.id);
+        existingSlugs.add(item.slug.toLowerCase());
+      }
+    }
+  } else {
+    const map = new Map<string, PropertyListing>();
+    localListings.forEach((l) => map.set(l.id, l));
+    dbListings.forEach((l) => map.set(l.id, l));
+    combined = Array.from(map.values());
+  }
 
-  return Array.from(map.values());
+  // Sort by updatedAt or createdAt descending so newest is always at top
+  combined.sort((a, b) => {
+    const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+    const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+    return timeB - timeA;
+  });
+
+  // Sync back to LocalStorage
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(combined));
+  } catch (e) {
+    console.warn('Failed to sync combined listings to localStorage:', e);
+  }
+
+  return combined;
 }
 
 export async function getListingBySlug(slug: string): Promise<PropertyListing | null> {
@@ -332,13 +361,10 @@ export async function saveListing(listing: PropertyListing): Promise<PropertyLis
     localListings = [];
   }
 
-  const existingIndex = localListings.findIndex((item) => item.id === listing.id);
-
-  if (existingIndex >= 0) {
-    localListings[existingIndex] = listing;
-  } else {
-    localListings.unshift(listing);
-  }
+  localListings = localListings.filter(
+    (item) => item.id !== listing.id && item.slug.toLowerCase() !== listing.slug.toLowerCase()
+  );
+  localListings.unshift(listing);
 
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(localListings));
@@ -350,27 +376,77 @@ export async function saveListing(listing: PropertyListing): Promise<PropertyLis
 }
 
 export async function deleteListing(id: string): Promise<boolean> {
+  let targetId = id;
+  let targetSlug = id;
+
+  // 1. Identify target listing details if available in local state, server API, or cache
   try {
-    await fetch(`/api/listings/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    let found: PropertyListing | undefined;
+    const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (localData) {
+      const parsed: PropertyListing[] = JSON.parse(localData);
+      found = parsed.find((l) => l.id === id || l.slug === id);
+    }
+    if (!found) {
+      const serverRes = await fetch(`/api/listings/${encodeURIComponent(id)}`);
+      const serverJson = await serverRes.json();
+      if (serverJson.success && serverJson.data) {
+        found = serverJson.data;
+      }
+    }
+    if (!found) {
+      const slugRes = await fetch(`/api/listings/slug/${encodeURIComponent(id)}`);
+      const slugJson = await slugRes.json();
+      if (slugJson.success && slugJson.data) {
+        found = slugJson.data;
+      }
+    }
+
+    if (found) {
+      targetId = found.id;
+      targetSlug = found.slug;
+    }
+  } catch (e) {
+    console.warn('Listing lookup error before delete:', e);
+  }
+
+  // 2. Delete from LocalStorage immediately
+  try {
+    const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (localData) {
+      const parsed: PropertyListing[] = JSON.parse(localData);
+      const filtered = parsed.filter(
+        (l) => l.id !== targetId && l.slug !== targetSlug && l.id !== id && l.slug !== id
+      );
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(filtered));
+    }
+  } catch (e) {
+    console.warn('localStorage set error during delete:', e);
+  }
+
+  // 3. Delete from Backend Server API
+  try {
+    await fetch(`/api/listings/${encodeURIComponent(targetId)}`, { method: 'DELETE' });
+    if (targetSlug && targetSlug !== targetId) {
+      await fetch(`/api/listings/${encodeURIComponent(targetSlug)}`, { method: 'DELETE' });
+    }
   } catch (e) {
     console.warn('Server API delete error:', e);
   }
 
+  // 4. Delete from Supabase DB if configured
   if (isSupabaseConfigured) {
     try {
-      await supabase.from('listings').delete().eq('id', id);
+      await supabase.from('listings').delete().or(`id.eq.${targetId},slug.eq.${targetSlug}`);
+      await supabase.from('listings').delete().eq('id', targetId);
+      if (targetSlug) {
+        await supabase.from('listings').delete().eq('slug', targetSlug);
+      }
     } catch (e) {
       console.warn('Supabase delete error:', e);
     }
   }
 
-  const listings = await getListings();
-  const filtered = listings.filter((item) => item.id !== id);
-  try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(filtered));
-  } catch (e) {
-    console.warn('localStorage set error:', e);
-  }
   return true;
 }
 

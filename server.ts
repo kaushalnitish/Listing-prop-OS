@@ -395,15 +395,29 @@ INSTRUCTIONS & CONVERSIONS:
       }
 
       const listings = getStoredListings();
-      const existingIdx = listings.findIndex((l: any) => l.id === listing.id || l.slug === listing.slug);
+      // Match existing listing strictly by ID
+      const existingIdx = listings.findIndex((l: any) => l.id === listing.id);
       if (existingIdx >= 0) {
-        listings[existingIdx] = { ...listings[existingIdx], ...listing, updatedAt: new Date().toISOString() };
+        const merged = { ...listings[existingIdx], ...listing, updatedAt: new Date().toISOString() };
+        listings[existingIdx] = merged;
+        saveStoredListings(listings);
+        return res.json({ success: true, data: merged });
       } else {
-        listings.unshift(listing);
-      }
+        // Resolve slug collision if another listing shares the same slug
+        let targetSlug = listing.slug;
+        let counter = 1;
+        while (listings.some((l: any) => l.slug === targetSlug && l.id !== listing.id)) {
+          targetSlug = `${listing.slug}-${counter}`;
+          counter++;
+        }
+        listing.slug = targetSlug;
+        if (!listing.createdAt) listing.createdAt = new Date().toISOString();
+        listing.updatedAt = new Date().toISOString();
 
-      saveStoredListings(listings);
-      return res.json({ success: true, data: listing });
+        listings.unshift(listing);
+        saveStoredListings(listings);
+        return res.json({ success: true, data: listing });
+      }
     } catch (err: any) {
       console.error("Error in POST /api/listings:", err);
       return res.status(500).json({ success: false, error: "Failed to save listing" });
@@ -415,7 +429,27 @@ INSTRUCTIONS & CONVERSIONS:
     try {
       const id = req.params.id;
       let listings = getStoredListings();
-      listings = listings.filter((l: any) => l.id !== id);
+
+      const targets = listings.filter((l: any) => l.id === id || l.slug === id);
+      for (const target of targets) {
+        if (target && Array.isArray(target.images)) {
+          for (const img of target.images) {
+            if (img && typeof img.url === "string" && img.url.startsWith("/uploads/")) {
+              try {
+                const fileName = path.basename(img.url);
+                const filePath = path.join(uploadsDir, fileName);
+                if (fs.existsSync(filePath)) {
+                  fs.unlinkSync(filePath);
+                }
+              } catch (e) {
+                console.warn("Could not delete image file during listing cleanup:", e);
+              }
+            }
+          }
+        }
+      }
+
+      listings = listings.filter((l: any) => l.id !== id && l.slug !== id);
       saveStoredListings(listings);
       return res.json({ success: true });
     } catch (err: any) {

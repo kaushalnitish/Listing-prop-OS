@@ -91,8 +91,8 @@ export const HeroGallery: React.FC<HeroGalleryProps> = ({
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-zinc-950/40 pointer-events-none" />
 
         {/* Top Floating Header Controls */}
-        <div className="absolute top-6 left-6 right-6 z-10 flex items-center justify-between pointer-events-auto">
-          <span className="px-3.5 py-1.5 rounded-full bg-black/40 border border-white/15 text-white text-[11px] font-medium uppercase tracking-widest backdrop-blur-md">
+        <div className="absolute top-4 sm:top-6 left-4 sm:left-6 right-4 sm:right-6 z-10 flex items-center justify-between pointer-events-auto">
+          <span className="px-3 py-1 rounded-full bg-black/40 border border-white/10 text-zinc-200 text-[10px] sm:text-[11px] font-mono tracking-widest uppercase backdrop-blur-md">
             {propertyType}
           </span>
 
@@ -101,45 +101,45 @@ export const HeroGallery: React.FC<HeroGalleryProps> = ({
               e.stopPropagation();
               handleShare();
             }}
-            className="p-2.5 rounded-full bg-black/40 border border-white/15 text-white hover:bg-white hover:text-black backdrop-blur-md transition-all shadow-lg flex items-center gap-1.5"
+            className="p-2 sm:p-2.5 rounded-full bg-black/40 border border-white/10 text-zinc-200 hover:text-white hover:bg-white/20 backdrop-blur-md transition-all shadow-lg flex items-center gap-1.5"
             title="Share Listing"
           >
             {copied ? (
               <>
-                <Check className="w-4 h-4 text-emerald-400" />
-                <span className="text-[11px] font-medium pr-1 text-emerald-400">Copied</span>
+                <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
+                <span className="text-[10px] sm:text-[11px] font-mono pr-1 text-emerald-400">Copied</span>
               </>
             ) : (
-              <Share2 className="w-4 h-4" />
+              <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             )}
           </button>
         </div>
 
         {/* Carousel Navigation Arrows */}
         {displayImages.length > 1 && (
-          <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4 pointer-events-none opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300">
+          <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-3 sm:px-6 pointer-events-none opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300">
             <button
               onClick={handlePrev}
-              className="p-3 rounded-full bg-black/40 border border-white/15 text-white hover:bg-white hover:text-black backdrop-blur-md pointer-events-auto transition-all shadow-xl"
+              className="p-2.5 sm:p-3 rounded-full bg-black/40 border border-white/10 text-white/90 hover:bg-white/20 backdrop-blur-md pointer-events-auto transition-all shadow-xl"
               title="Previous Photo"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
             <button
               onClick={handleNext}
-              className="p-3 rounded-full bg-black/40 border border-white/15 text-white hover:bg-white hover:text-black backdrop-blur-md pointer-events-auto transition-all shadow-xl"
+              className="p-2.5 sm:p-3 rounded-full bg-black/40 border border-white/10 text-white/90 hover:bg-white/20 backdrop-blur-md pointer-events-auto transition-all shadow-xl"
               title="Next Photo"
             >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         )}
 
         {/* Bottom Bar overlay: Photo Index Badge + Fullscreen Trigger */}
-        <div className="absolute bottom-6 left-6 right-6 z-10 flex items-center justify-between pointer-events-auto">
-          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/40 border border-white/15 backdrop-blur-md text-xs font-medium text-white/90">
-            <Camera className="w-3.5 h-3.5 text-zinc-300" />
+        <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-6 z-10 flex items-center justify-between pointer-events-auto">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/40 border border-white/10 backdrop-blur-md text-[11px] font-mono text-zinc-300">
+            <Camera className="w-3.5 h-3.5 text-zinc-400" />
             <span>
               {activeIndex + 1} / {displayImages.length}
             </span>
@@ -147,7 +147,7 @@ export const HeroGallery: React.FC<HeroGalleryProps> = ({
 
           <button
             onClick={() => onOpenLightbox(activeIndex)}
-            className="px-4 py-1.5 rounded-full bg-black/40 border border-white/15 backdrop-blur-md text-xs font-medium text-white hover:bg-white hover:text-black flex items-center gap-2 shadow-xl transition-all"
+            className="px-3.5 py-1 rounded-full bg-black/40 border border-white/10 backdrop-blur-md text-[11px] font-mono text-zinc-200 hover:text-white hover:bg-white/20 flex items-center gap-1.5 shadow-xl transition-all"
           >
             <Maximize2 className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Expand Gallery</span>

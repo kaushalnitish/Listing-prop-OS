@@ -14,12 +14,12 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({
   if (!images || images.length === 0) return null;
 
   return (
-    <div className="space-y-6 pt-4 border-t border-zinc-800/80">
+    <div className="space-y-6 pt-4 border-t border-white/[0.08]">
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-mono uppercase tracking-widest text-zinc-400">
+        <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">
           Architecture & Interiors ({images.length})
         </h2>
-        <span className="text-xs font-mono text-zinc-400 hidden sm:inline">Select photo to view full frame</span>
+        <span className="text-xs font-mono text-zinc-500 hidden sm:inline">Select photo to view full frame</span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -27,7 +27,7 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({
           <div
             key={img.id || idx}
             onClick={() => onOpenLightbox(idx)}
-            className="group relative aspect-[4/3] rounded-xl overflow-hidden bg-zinc-950 border border-zinc-800/80 cursor-pointer transition-all duration-500 hover:border-zinc-500"
+            className="group relative aspect-[4/3] rounded-xl overflow-hidden bg-zinc-950 border border-white/[0.08] cursor-pointer transition-all duration-300 hover:border-zinc-600"
           >
             <img
               src={img.url}
@@ -36,7 +36,7 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({
               height="600"
               loading="lazy"
               decoding="async"
-              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
               referrerPolicy="no-referrer"
             />
 

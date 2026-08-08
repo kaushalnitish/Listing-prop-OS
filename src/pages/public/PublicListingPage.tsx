@@ -128,7 +128,7 @@ export const PublicListingPage: React.FC = () => {
         />
 
         {/* Locked Page Content Layout Container */}
-        <div className="max-w-5xl mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-16 pb-24 sm:pb-32 space-y-16 sm:space-y-24">
+        <div className="max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-8 lg:px-12 pt-8 sm:pt-14 pb-28 sm:pb-36 space-y-12 sm:space-y-20">
           {/* 2 & 3. Price, Property Title & Quick Specs */}
           <PropertySpecs
             price={listing.price}

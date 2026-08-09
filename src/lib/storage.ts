@@ -506,6 +506,8 @@ export async function uploadImageToSupabaseStorage(file: File): Promise<string> 
   const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
   const filePath = `listings/${fileName}`;
 
+  let clientErrorMsg = '';
+
   // 1. Client-side Supabase Storage upload if configured
   if (isSupabaseConfigured) {
     try {
@@ -522,9 +524,11 @@ export async function uploadImageToSupabaseStorage(file: File): Promise<string> 
           return data.publicUrl;
         }
       } else {
-        console.warn('Supabase client upload failed, delegating to server:', uploadError);
+        clientErrorMsg = uploadError.message || JSON.stringify(uploadError);
+        console.warn('Supabase client upload failed:', clientErrorMsg);
       }
-    } catch (err) {
+    } catch (err: any) {
+      clientErrorMsg = err?.message || String(err);
       console.warn('Supabase Storage client upload exception:', err);
     }
   }
@@ -544,13 +548,29 @@ export async function uploadImageToSupabaseStorage(file: File): Promise<string> 
       body: JSON.stringify({ image: base64, name: file.name }),
     });
 
+    if (!res.ok) {
+      const contentType = res.headers.get('content-type') || '';
+      let serverErr = `HTTP ${res.status} ${res.statusText}`;
+      if (contentType.includes('application/json')) {
+        const errJson = await res.json().catch(() => ({}));
+        if (errJson.error) serverErr = errJson.error;
+      }
+      throw new Error(`Server API unavailable or returned error (${serverErr})`);
+    }
+
     const json = await res.json();
-    if (json.success && json.url && !json.url.startsWith('blob:')) {
+    if (json.success && json.url && !json.url.startsWith('blob:') && !json.url.startsWith('data:')) {
       return json.url;
     }
     throw new Error(json.error || 'Server upload failed to return a valid URL');
-  } catch (err) {
-    console.error('Server upload failed:', err);
-    throw err;
+  } catch (err: any) {
+    const detail = clientErrorMsg
+      ? `Supabase Client: "${clientErrorMsg}". Server Backup: "${err.message || err}"`
+      : isSupabaseConfigured
+      ? `Upload failed: ${err.message || err}`
+      : `Supabase credentials (VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY) are missing in build environment, and server upload backup failed (${err.message || err}).`;
+    console.error('Image upload failed:', detail);
+    throw new Error(detail);
   }
 }
+

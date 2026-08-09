@@ -87,9 +87,10 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         let permanentUrl: string;
         try {
           permanentUrl = await uploadImageToSupabaseStorage(file);
-        } catch (uploadErr) {
+        } catch (uploadErr: any) {
+          const errMsg = uploadErr?.message || String(uploadErr);
           console.error('Upload error for file:', file.name, uploadErr);
-          alert(`Failed to upload ${file.name} to storage. Please ensure your network/storage settings are configured.`);
+          alert(`Failed to upload ${file.name}: ${errMsg}`);
           continue;
         }
 

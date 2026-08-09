@@ -26,15 +26,15 @@ export const LocationMap: React.FC<LocationMapProps> = ({ location }) => {
   )}&t=&z=14&ie=UTF8&iwloc=&output=embed`;
 
   return (
-    <div className="space-y-6 pt-4 border-t border-stone-200/80">
+    <div className="rounded-2xl sm:rounded-3xl bg-white/75 backdrop-blur-md border border-stone-200/80 p-6 sm:p-8 shadow-sm space-y-6 w-full max-w-full">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1 max-w-xl">
           <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-stone-500">
             Location & Context
           </h2>
-          <p className="text-sm sm:text-base font-normal text-stone-900 flex items-center gap-2 break-words">
+          <p className="text-sm sm:text-base font-normal text-stone-900 flex items-center gap-2 min-w-0">
             <Navigation className="w-4 h-4 text-emerald-800 shrink-0" />
-            <span>{fullAddress}</span>
+            <span className="break-words min-w-0">{fullAddress}</span>
           </p>
         </div>
 
@@ -42,7 +42,7 @@ export const LocationMap: React.FC<LocationMapProps> = ({ location }) => {
           href={googleMapsSearchUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-3.5 py-1.5 rounded-full bg-white/90 border border-stone-200/80 text-stone-800 hover:text-stone-950 hover:bg-white text-xs font-mono flex items-center gap-2 transition-all shadow-xs"
+          className="px-3.5 py-1.5 rounded-full bg-white border border-stone-200/80 text-stone-800 hover:text-stone-950 hover:bg-stone-50 text-xs font-mono flex items-center gap-2 transition-all shadow-2xs"
         >
           <ExternalLink className="w-3.5 h-3.5 text-stone-500" />
           <span>Open Maps</span>
@@ -59,7 +59,7 @@ export const LocationMap: React.FC<LocationMapProps> = ({ location }) => {
             {location.nearbyHighlights.map((highlight, idx) => (
               <span
                 key={idx}
-                className="px-3 py-1 rounded-full bg-stone-100 border border-stone-200/80 text-xs text-stone-800 font-normal shadow-2xs"
+                className="px-3 py-1 rounded-full bg-stone-50 border border-stone-200/80 text-xs text-stone-800 font-normal shadow-2xs"
               >
                 {highlight}
               </span>
@@ -69,7 +69,7 @@ export const LocationMap: React.FC<LocationMapProps> = ({ location }) => {
       )}
 
       {/* Embedded Google Maps Container */}
-      <div className="w-full h-60 sm:h-72 rounded-2xl overflow-hidden border border-stone-200/80 relative bg-stone-100 shadow-xs">
+      <div className="w-full h-60 sm:h-72 rounded-xl sm:rounded-2xl overflow-hidden border border-stone-200/80 relative bg-stone-100 shadow-2xs">
         <iframe
           title="Property Location Map"
           src={mapEmbedUrl}

@@ -34,7 +34,7 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
   const currentImage = images[currentIndex] || images[0];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-2 sm:p-6 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-2 sm:p-6 animate-in fade-in duration-200 w-full max-w-full overflow-hidden">
       {/* Top Bar */}
       <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between">
         <div className="flex items-center gap-2 bg-black/60 border border-white/15 px-3 py-1.5 rounded-full text-xs font-mono text-white/90 backdrop-blur-md">

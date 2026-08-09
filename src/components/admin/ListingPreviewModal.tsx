@@ -108,7 +108,7 @@ export const ListingPreviewModal: React.FC<ListingPreviewModalProps> = ({
       </div>
 
       {/* 2. Public Template Preview Content */}
-      <div className="flex-1 bg-zinc-950 pb-16">
+      <div className="flex-1 bg-[#FAF9F6] pb-28 sm:pb-36 w-full max-w-full overflow-x-hidden">
         {/* Hero Gallery */}
         <HeroGallery
           images={listing.images || []}
@@ -118,7 +118,7 @@ export const ListingPreviewModal: React.FC<ListingPreviewModalProps> = ({
         />
 
         {/* Content Container */}
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
+        <div className="max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-8 lg:px-12 pt-6 sm:pt-10 space-y-8 sm:space-y-12">
           <PropertySpecs
             price={listing.price}
             currency={listing.currency || '$'}

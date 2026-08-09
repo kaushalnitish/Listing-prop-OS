@@ -14,7 +14,7 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({
   if (!images || images.length === 0) return null;
 
   return (
-    <div className="space-y-6 pt-4 border-t border-stone-200/80">
+    <div className="rounded-2xl sm:rounded-3xl bg-white/75 backdrop-blur-md border border-stone-200/80 p-6 sm:p-8 shadow-sm space-y-6 w-full max-w-full">
       <div className="flex items-center justify-between">
         <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-stone-500">
           Architecture & Interiors ({images.length})
@@ -27,7 +27,7 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({
           <div
             key={img.id || idx}
             onClick={() => onOpenLightbox(idx)}
-            className="group relative aspect-[4/3] rounded-2xl overflow-hidden bg-stone-100 border border-stone-200/80 cursor-pointer transition-all duration-300 hover:border-stone-400 shadow-2xs"
+            className="group relative aspect-[4/3] rounded-xl sm:rounded-2xl overflow-hidden bg-stone-100 border border-stone-200/80 cursor-pointer transition-all duration-300 hover:border-stone-400 shadow-2xs"
           >
             <img
               src={img.url}

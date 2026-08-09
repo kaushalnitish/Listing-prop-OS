@@ -33,10 +33,10 @@ export const StickyActionBar: React.FC<StickyActionBarProps> = ({
   const agencyTitle = contact.agencyName || contact.agentRole || 'Property Advisor';
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-stone-200/80 p-3 sm:p-4 shadow-lg">
-      <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+    <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-stone-200/80 p-2.5 sm:p-4 shadow-lg w-full max-w-full overflow-hidden">
+      <div className="max-w-5xl mx-auto flex items-center justify-between gap-2 sm:gap-4 w-full">
         {/* Agent Info Snippet */}
-        <div className="hidden sm:flex items-center gap-3">
+        <div className="hidden sm:flex items-center gap-3 shrink-0">
           <div className="w-9 h-9 rounded-full bg-stone-100 border border-stone-200/80 flex items-center justify-center font-serif font-semibold text-stone-800 text-xs shrink-0 shadow-2xs">
             {agentInitial}
           </div>
@@ -51,15 +51,15 @@ export const StickyActionBar: React.FC<StickyActionBarProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="w-full sm:w-auto flex items-center gap-2.5 justify-end">
+        <div className="w-full sm:w-auto flex items-center gap-2 sm:gap-2.5 justify-end min-w-0">
           {/* Call Button */}
           {contact.phone && (
             <a
               href={callUrl}
-              className="flex-1 sm:flex-none px-4 sm:px-5 py-2.5 rounded-full bg-stone-100 hover:bg-stone-200 border border-stone-200/80 text-stone-800 font-medium text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-2xs"
+              className="flex-1 sm:flex-none px-3 sm:px-5 py-2.5 rounded-full bg-stone-100 hover:bg-stone-200 border border-stone-200/80 text-stone-800 font-medium text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all active:scale-[0.98] shadow-2xs min-w-0"
             >
-              <Phone className="w-3.5 h-3.5 text-stone-600" />
-              <span>Call Direct</span>
+              <Phone className="w-3.5 h-3.5 text-stone-600 shrink-0" />
+              <span className="truncate">Call Direct</span>
             </a>
           )}
 
@@ -68,10 +68,10 @@ export const StickyActionBar: React.FC<StickyActionBarProps> = ({
             href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 sm:flex-none px-5 sm:px-6 py-2.5 rounded-full bg-emerald-800 hover:bg-emerald-900 text-white font-medium text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-xs active:scale-[0.98]"
+            className="flex-1 sm:flex-none px-3.5 sm:px-6 py-2.5 rounded-full bg-emerald-800 hover:bg-emerald-900 text-white font-medium text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all shadow-xs active:scale-[0.98] min-w-0"
           >
-            <MessageSquare className="w-3.5 h-3.5 fill-white stroke-none" />
-            <span>Inquire on WhatsApp</span>
+            <MessageSquare className="w-3.5 h-3.5 fill-white stroke-none shrink-0" />
+            <span className="truncate">Inquire on WhatsApp</span>
           </a>
         </div>
       </div>

@@ -55,13 +55,13 @@ export const PropertySpecs: React.FC<PropertySpecsProps> = ({
   const hasParking = typeof specs?.parkingSpaces === 'number' && specs.parkingSpaces > 0;
 
   return (
-    <div className="space-y-8 sm:space-y-10">
-      {/* Title & Headline Block */}
-      <div className="space-y-3 sm:space-y-4 max-w-3xl">
+    <div className="space-y-6 sm:space-y-8 w-full max-w-full">
+      {/* Title, Headline & Price Block — Subtle Warm White Glass Card */}
+      <div className="rounded-2xl sm:rounded-3xl bg-white/75 backdrop-blur-md border border-stone-200/80 p-5 sm:p-8 lg:p-10 shadow-sm relative overflow-hidden space-y-4 w-full">
         {locationText && (
-          <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-stone-500">
+          <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-stone-500 min-w-0">
             <MapPin className="w-3.5 h-3.5 text-stone-500 shrink-0" />
-            <span className="truncate">{locationText}</span>
+            <span className="truncate min-w-0">{locationText}</span>
           </div>
         )}
 
@@ -70,48 +70,48 @@ export const PropertySpecs: React.FC<PropertySpecsProps> = ({
         </h1>
 
         {tagline && (
-          <p className="text-sm sm:text-base text-stone-600 font-normal leading-relaxed pt-0.5">
+          <p className="text-sm sm:text-base text-stone-600 font-normal leading-relaxed pt-0.5 break-words">
             {tagline}
           </p>
         )}
 
-        {/* Price Presentation - Clean & Understated */}
-        <div className="pt-2 flex items-baseline gap-3">
-          <span className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-stone-500">
+        {/* Price Presentation */}
+        <div className="pt-2 flex items-baseline gap-3 min-w-0 border-t border-stone-200/60">
+          <span className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-stone-500 shrink-0">
             Offered At
           </span>
-          <span className="text-2xl sm:text-3xl font-light text-stone-900 tracking-tight">
+          <span className="text-2xl sm:text-3xl font-light text-stone-900 tracking-tight break-all">
             {currency}{formattedPrice}
           </span>
         </div>
       </div>
 
-      {/* Key Architectural Specs Bar — Refined Light Glassmorphism Panel */}
-      <div className="relative rounded-2xl bg-white/90 backdrop-blur-md border border-stone-200/80 p-5 sm:p-6 lg:p-7 shadow-xs overflow-hidden">
-        <div className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-          <div>
-            <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.18em] text-stone-500">
+      {/* Section B: Key Architectural Stats Card — Premium Warm White Glass Panel */}
+      <div className="rounded-2xl sm:rounded-3xl bg-white/85 backdrop-blur-md border border-stone-200/80 p-5 sm:p-6 lg:p-8 shadow-sm relative overflow-hidden w-full max-w-full">
+        <div className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 w-full">
+          <div className="min-w-0 p-3 sm:p-4 rounded-xl bg-stone-50/50 border border-stone-200/40">
+            <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.18em] text-stone-500 truncate">
               Bedrooms
             </p>
-            <p className="text-xl sm:text-2xl font-light text-stone-900 mt-1">
+            <p className="text-xl sm:text-2xl font-light text-stone-900 mt-1 truncate">
               {safeBedrooms}
             </p>
           </div>
 
-          <div>
-            <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.18em] text-stone-500">
+          <div className="min-w-0 p-3 sm:p-4 rounded-xl bg-stone-50/50 border border-stone-200/40">
+            <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.18em] text-stone-500 truncate">
               Bathrooms
             </p>
-            <p className="text-xl sm:text-2xl font-light text-stone-900 mt-1">
+            <p className="text-xl sm:text-2xl font-light text-stone-900 mt-1 truncate">
               {safeBathrooms}
             </p>
           </div>
 
-          <div>
-            <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.18em] text-stone-500">
+          <div className="min-w-0 p-3 sm:p-4 rounded-xl bg-stone-50/50 border border-stone-200/40">
+            <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.18em] text-stone-500 truncate">
               Living Area
             </p>
-            <p className="text-xl sm:text-2xl font-light text-stone-900 mt-1">
+            <p className="text-xl sm:text-2xl font-light text-stone-900 mt-1 truncate">
               {safeSqFt}{' '}
               {safeSqFt !== '—' && (
                 <span className="text-xs text-stone-500 font-normal">sq ft</span>
@@ -119,8 +119,8 @@ export const PropertySpecs: React.FC<PropertySpecsProps> = ({
             </p>
           </div>
 
-          <div>
-            <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.18em] text-stone-500">
+          <div className="min-w-0 p-3 sm:p-4 rounded-xl bg-stone-50/50 border border-stone-200/40">
+            <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.18em] text-stone-500 truncate">
               Property Type
             </p>
             <p className="text-base sm:text-lg font-light text-stone-900 mt-1 break-words">
@@ -130,18 +130,18 @@ export const PropertySpecs: React.FC<PropertySpecsProps> = ({
         </div>
       </div>
 
-      {/* Secondary Details (Built year & Parking) */}
+      {/* Section C: Year Built / Garage Section — Secondary Warm Glass Card */}
       {(hasYearBuilt || hasParking) && (
-        <div className="flex flex-wrap items-center gap-6 text-xs text-stone-600 font-mono tracking-wider">
+        <div className="rounded-xl sm:rounded-2xl bg-white/75 backdrop-blur-md border border-stone-200/80 p-4 sm:p-5 shadow-2xs flex flex-wrap items-center gap-6 text-xs text-stone-700 font-mono tracking-wider w-full">
           {hasYearBuilt && (
             <div className="flex items-center gap-2">
-              <Calendar className="w-3.5 h-3.5 text-stone-500" />
+              <Calendar className="w-3.5 h-3.5 text-stone-500 shrink-0" />
               <span>Year Built: {specs.yearBuilt}</span>
             </div>
           )}
           {hasParking && (
             <div className="flex items-center gap-2">
-              <Car className="w-3.5 h-3.5 text-stone-500" />
+              <Car className="w-3.5 h-3.5 text-stone-500 shrink-0" />
               <span>Garage Spaces: {specs.parkingSpaces}</span>
             </div>
           )}

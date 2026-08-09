@@ -242,7 +242,7 @@ export const handler = async (event: any) => {
 
     // Route: DELETE /api/listings/:id
     if (httpMethod === "DELETE") {
-      const pathParts = path.split("/").filter(Boolean);
+      const pathParts = fullUrlPath.split("/").filter(Boolean);
       const targetId = pathParts[pathParts.length - 1];
 
       if (supabase && targetId) {

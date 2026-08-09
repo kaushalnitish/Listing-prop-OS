@@ -370,18 +370,17 @@ INSTRUCTIONS & CONVERSIONS:
 
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
 
-      // Try uploading to Supabase Storage first
+      // Upload to Supabase Storage
       const supabaseUrl = await uploadBufferToSupabase(buffer, fileName, mimeType);
       if (supabaseUrl) {
         return res.json({ success: true, url: supabaseUrl });
       }
 
-      // Fallback to local server uploads directory if Supabase is unconfigured
-      const filePath = path.join(uploadsDir, fileName);
-      fs.writeFileSync(filePath, buffer);
-
-      const publicUrl = `/uploads/${fileName}`;
-      return res.json({ success: true, url: publicUrl });
+      // Permanent storage requirement: Do NOT fall back to local /uploads/ directory.
+      return res.status(500).json({
+        success: false,
+        error: "Supabase Storage upload failed or is not configured. Images must be stored in permanent cloud storage.",
+      });
     } catch (err: any) {
       console.error("Error in /api/upload-image:", err);
       return res.status(500).json({ success: false, error: "Failed to upload image" });

@@ -57,6 +57,10 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
       <div className="relative w-full max-w-5xl h-full max-h-[85vh] flex flex-col items-center justify-center">
         <img
           src={currentImage.url}
+          onError={(e) => {
+            e.currentTarget.src =
+              'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=80';
+          }}
           alt={currentImage.caption || `Property image ${currentIndex + 1}`}
           className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl"
           referrerPolicy="no-referrer"

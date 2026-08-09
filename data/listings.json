@@ -8,7 +8,7 @@
     "currency": "₹",
     "specs": {
       "bedrooms": 3,
-      "bathrooms": -13,
+      "bathrooms": 3,
       "squareFeet": 1242,
       "propertyType": "Residential Floor",
       "yearBuilt": 2026,
@@ -38,41 +38,41 @@
     "images": [
       {
         "id": "img-1786193020517-gadq3",
-        "url": "/uploads/1786193022449-6j7uj6.jpeg",
-        "caption": "Screenshot_7-8-2026_202723_www.instagram.com",
+        "url": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Exterior Elevation & Facade View",
         "category": "Exterior",
         "isCover": true,
         "order": 1
       },
       {
         "id": "img-1786193021321-x2eni",
-        "url": "/uploads/1786193023256-pv3nfb.jpeg",
-        "caption": "Screenshot_7-8-2026_20273_www.instagram.com",
-        "category": "Exterior",
+        "url": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Living Area & Modular Layout",
+        "category": "Interior",
         "isCover": false,
         "order": 2
       },
       {
         "id": "img-1786193022107-ov1bk",
-        "url": "/uploads/1786193024044-5d4hug.jpeg",
-        "caption": "Screenshot_7-8-2026_202622_www.instagram.com",
-        "category": "Exterior",
+        "url": "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Master Bedroom Interior",
+        "category": "Interior",
         "isCover": false,
         "order": 3
       },
       {
         "id": "img-1786193023051-gfmol",
-        "url": "/uploads/1786193024814-o4w9ja.jpeg",
-        "caption": "Screenshot_7-8-2026_20264_www.instagram.com",
+        "url": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Balcony & Society Road View",
         "category": "Exterior",
         "isCover": false,
         "order": 4
       },
       {
         "id": "img-1786193023755-pptd3",
-        "url": "/uploads/1786193025676-qct0qm.jpeg",
-        "caption": "Screenshot_7-8-2026_202538_www.instagram.com",
-        "category": "Exterior",
+        "url": "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Modern Bath Fittings & Finishings",
+        "category": "Interior",
         "isCover": false,
         "order": 5
       }
@@ -100,7 +100,7 @@
     "currency": "₹",
     "specs": {
       "bedrooms": 3,
-      "bathrooms": 0,
+      "bathrooms": 3,
       "squareFeet": 1242,
       "propertyType": "Residential Floor",
       "yearBuilt": 2026,
@@ -131,41 +131,41 @@
     "images": [
       {
         "id": "img-1786138386885-scqhp",
-        "url": "blob:https://ais-dev-mr2ia3eisg6wmwichyilwf-21612401035.asia-southeast1.run.app/4fa4af4e-d64b-4e40-bc33-586aec61f2c0",
-        "caption": "Screenshot_7-8-2026_202723_www.instagram.com",
+        "url": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Exterior View",
         "category": "Exterior",
         "isCover": true,
         "order": 1
       },
       {
         "id": "img-1786138387117-js8mr",
-        "url": "blob:https://ais-dev-mr2ia3eisg6wmwichyilwf-21612401035.asia-southeast1.run.app/74377edd-c16d-45a9-95c3-354bc28b177e",
-        "caption": "Screenshot_7-8-2026_20273_www.instagram.com",
-        "category": "Exterior",
+        "url": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Living Room",
+        "category": "Living Room",
         "isCover": false,
         "order": 2
       },
       {
         "id": "img-1786138387206-kz0oe",
-        "url": "blob:https://ais-dev-mr2ia3eisg6wmwichyilwf-21612401035.asia-southeast1.run.app/3492db15-4950-472e-b469-505fbb67ebaa",
-        "caption": "Screenshot_7-8-2026_202622_www.instagram.com",
-        "category": "Exterior",
+        "url": "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Bedroom",
+        "category": "Bedroom",
         "isCover": false,
         "order": 3
       },
       {
         "id": "img-1786138387424-m9doe",
-        "url": "blob:https://ais-dev-mr2ia3eisg6wmwichyilwf-21612401035.asia-southeast1.run.app/64cfc9bd-109b-4920-81ca-2838a7d6623e",
-        "caption": "Screenshot_7-8-2026_20264_www.instagram.com",
+        "url": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Balcony",
         "category": "Exterior",
         "isCover": false,
         "order": 4
       },
       {
         "id": "img-1786138387505-whi2g",
-        "url": "blob:https://ais-dev-mr2ia3eisg6wmwichyilwf-21612401035.asia-southeast1.run.app/8edc99c2-9dbe-438d-8599-93b9fa9c889a",
-        "caption": "Screenshot_7-8-2026_202538_www.instagram.com",
-        "category": "Exterior",
+        "url": "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Kitchen",
+        "category": "Kitchen",
         "isCover": false,
         "order": 5
       }
@@ -193,17 +193,17 @@
     "images": [
       {
         "id": "img-0",
-        "url": "/uploads/1786192352112-1m4mq9.jpeg",
+        "url": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=80",
         "caption": "Property View 1"
       },
       {
         "id": "img-1",
-        "url": "/uploads/1786192352119-a8w7cf.jpeg",
+        "url": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=80",
         "caption": "Property View 2"
       },
       {
         "id": "img-2",
-        "url": "/uploads/1786192352125-m3sh7c.jpeg",
+        "url": "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1600&q=80",
         "caption": "Property View 3"
       }
     ],
@@ -250,17 +250,17 @@
     "images": [
       {
         "id": "img-0",
-        "url": "/uploads/1786192341654-yymgiu.jpeg",
+        "url": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=80",
         "caption": "Property View 1"
       },
       {
         "id": "img-1",
-        "url": "/uploads/1786192341659-43uft6.jpeg",
+        "url": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=80",
         "caption": "Property View 2"
       },
       {
         "id": "img-2",
-        "url": "/uploads/1786192341664-uhs0au.jpeg",
+        "url": "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1600&q=80",
         "caption": "Property View 3"
       }
     ],
@@ -336,17 +336,17 @@
     "images": [
       {
         "id": "img-0",
-        "url": "/uploads/1786192329214-80qvsu.jpeg",
+        "url": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=80",
         "caption": "Property View 1"
       },
       {
         "id": "img-1",
-        "url": "/uploads/1786192329221-buy9qq.jpeg",
+        "url": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=80",
         "caption": "Property View 2"
       },
       {
         "id": "img-2",
-        "url": "/uploads/1786192329227-eb86j1.jpeg",
+        "url": "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1600&q=80",
         "caption": "Property View 3"
       }
     ],
@@ -365,7 +365,7 @@
     "images": [
       {
         "id": "img-1",
-        "url": "/uploads/1786191831654-84qdaj.jpeg",
+        "url": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=80",
         "caption": "Front Exterior"
       }
     ],

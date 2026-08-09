@@ -361,10 +361,12 @@ export async function saveListing(listing: PropertyListing): Promise<PropertyLis
               const uploadedUrl = await uploadImageToSupabaseStorage(file);
               return { ...img, url: uploadedUrl };
             }
-          } catch (e) {
-            console.warn('Failed to convert image URL:', e);
-            return img;
+          } catch (e: any) {
+            console.error('Failed to convert image URL to permanent storage:', e);
+            throw new Error(`Failed to upload photo "${img.caption || 'Property Image'}" to permanent Supabase Storage: ${e?.message || e}`);
           }
+        } else if (img.url && (img.url.startsWith('/uploads/') || img.url.startsWith('uploads/'))) {
+          throw new Error(`Image URL "${img.url}" is a temporary local container path. All property images must be saved with permanent Supabase Storage URLs.`);
         }
         return img;
       })
@@ -586,10 +588,10 @@ export async function uploadImageToSupabaseStorage(file: File): Promise<string> 
     }
 
     const json = await res.json();
-    if (json.success && json.url && !json.url.startsWith('blob:') && !json.url.startsWith('data:')) {
+    if (json.success && json.url && (json.url.startsWith('https://') || json.url.startsWith('http://'))) {
       return json.url;
     }
-    throw new Error(json.error || 'Server upload failed to return a valid URL');
+    throw new Error(json.error || 'Server upload failed to return a permanent public HTTPS URL');
   } catch (err: any) {
     const detail = clientErrorMsg
       ? `Supabase Client: "${clientErrorMsg}". Server Backup: "${err.message || err}"`

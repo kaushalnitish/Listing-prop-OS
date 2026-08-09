@@ -419,15 +419,20 @@ INSTRUCTIONS & CONVERSIONS:
           s
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
-            .replace(/-(luxury|premium|featured|exclusive|prime|sale|for)-/g, '-')
+            .replace(/^(luxury|premium|featured|exclusive|prime|sale|for)-+/g, '')
+            .replace(/-(luxury|premium|featured|exclusive|prime|sale|for)-+/g, '-')
+            .replace(/-(luxury|premium|featured|exclusive|prime|sale|for)$/g, '')
+            .replace(/-\d+$/g, '')
             .replace(/(^-|-$)+/g, '');
 
         const strippedTarget = stripNoise(slug);
-        match = listings.find(
-          (l: any) =>
-            (l.slug && stripNoise(l.slug) === strippedTarget) ||
-            (Array.isArray(l.previousSlugs) && l.previousSlugs.some((ps: string) => stripNoise(ps) === strippedTarget))
-        );
+        if (strippedTarget) {
+          match = listings.find(
+            (l: any) =>
+              (l.slug && stripNoise(l.slug) === strippedTarget) ||
+              (Array.isArray(l.previousSlugs) && l.previousSlugs.some((ps: string) => stripNoise(ps) === strippedTarget))
+          );
+        }
       }
 
       // 3. Keyword subset matching (if requested slug keywords are all contained in stored slug/title)

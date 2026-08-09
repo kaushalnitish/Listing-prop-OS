@@ -78,6 +78,10 @@ export const HeroGallery: React.FC<HeroGalleryProps> = ({
       >
         <img
           src={currentImage.url}
+          onError={(e) => {
+            e.currentTarget.src =
+              'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=80';
+          }}
           alt={currentImage.caption || propertyTitle}
           width="1600"
           height="900"

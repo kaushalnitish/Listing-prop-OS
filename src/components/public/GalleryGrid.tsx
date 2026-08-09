@@ -31,6 +31,10 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({
           >
             <img
               src={img.url}
+              onError={(e) => {
+                e.currentTarget.src =
+                  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80';
+              }}
               alt={img.caption || `Property image ${idx + 1}`}
               width="800"
               height="600"

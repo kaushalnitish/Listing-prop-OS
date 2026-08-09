@@ -49,9 +49,19 @@ export const AdminDashboardPage: React.FC = () => {
 
   const fetchListingsData = async () => {
     setLoading(true);
-    const data = await getListings();
-    setListings(data);
-    setLoading(false);
+    try {
+      const data = await getListings();
+      setListings(data);
+    } catch (err: any) {
+      console.error('Failed to fetch listings:', err);
+      setToastMessage({
+        type: 'error',
+        message: err.message || 'Failed to load listings from database.',
+      });
+      setListings([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -182,18 +192,33 @@ export const AdminDashboardPage: React.FC = () => {
     setIsDeleting(true);
     try {
       const targetId = itemToDelete.id;
-      const targetSlug = itemToDelete.slug;
-      setListings((prev) =>
-        prev.filter((item) => item.id !== targetId && item.slug !== targetSlug)
-      );
       await deleteListing(targetId);
-      await fetchListingsData();
-      setToastMessage({
-        type: 'info',
-        message: 'Listing permanently deleted.',
-      });
-    } catch (err) {
+
+      // Re-fetch from authoritative source to verify deletion
+      const freshListings = await getListings();
+      setListings(freshListings);
+
+      const stillPresent = freshListings.some((l) => l.id === targetId);
+
+      if (!stillPresent) {
+        setToastMessage({
+          type: 'info',
+          message: 'Listing permanently deleted.',
+        });
+      } else {
+        setToastMessage({
+          type: 'error',
+          message: 'Unable to delete listing from server database. Record still present.',
+        });
+      }
+    } catch (err: any) {
       console.error('Failed to delete listing:', err);
+      setToastMessage({
+        type: 'error',
+        message: `Delete failed: ${err.message || 'Server error'}`,
+      });
+      // Refresh to ensure UI matches exact server state
+      await fetchListingsData();
     } finally {
       setIsDeleting(false);
       setItemToDelete(null);

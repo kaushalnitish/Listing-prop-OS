@@ -80,168 +80,78 @@ function fromDbRow(row: any): PropertyListing {
 }
 
 export async function getListings(): Promise<PropertyListing[]> {
-  let serverListings: PropertyListing[] = [];
-  let serverSuccess = false;
-
   // 1. Fetch from Authoritative Backend Server API
   try {
     const res = await fetch('/api/listings');
     const json = await res.json();
-    if (json.success && Array.isArray(json.data)) {
-      serverListings = json.data;
-      serverSuccess = true;
+    if (res.ok && json.success && Array.isArray(json.data)) {
+      const serverListings: PropertyListing[] = json.data;
+
+      // Sort by updatedAt or createdAt descending
+      serverListings.sort((a, b) => {
+        const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+        const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+        return timeB - timeA;
+      });
+
+      // Update LocalStorage cache to stay in sync with authoritative server state
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(serverListings));
+      } catch (e) {
+        console.warn('Failed to sync listings cache to localStorage:', e);
+      }
+
+      return serverListings;
+    } else {
+      console.warn('Backend API returned error:', json.error);
     }
   } catch (e) {
     console.warn('Failed to fetch listings from backend API:', e);
   }
 
-  let dbListings: PropertyListing[] = [];
-
-  // 2. Fetch from Supabase DB
+  // 2. Direct Supabase fallback if client-side query is configured and API failed
   if (isSupabaseConfigured) {
     try {
-      let { data, error } = await supabase
+      const { data, error } = await supabase
         .from('listings')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        const fallback = await supabase.from('listings').select('*');
-        data = fallback.data;
-        error = fallback.error;
-      }
-
-      if (!error && data && data.length > 0) {
-        dbListings = data.map(fromDbRow);
+      if (!error && data) {
+        const dbListings = data.map(fromDbRow);
+        try {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dbListings));
+        } catch {}
+        return dbListings;
       }
     } catch (e) {
       console.warn('Supabase fetch error:', e);
     }
   }
 
-  let finalResult: PropertyListing[] = [];
-
-  if (serverSuccess) {
-    // Server is the single authoritative source of truth
-    const map = new Map<string, PropertyListing>();
-    serverListings.forEach((l) => map.set(l.id, l));
-    dbListings.forEach((l) => {
-      if (!map.has(l.id)) {
-        map.set(l.id, l);
-      }
-    });
-    finalResult = Array.from(map.values());
-  } else if (dbListings.length > 0) {
-    finalResult = dbListings;
-  } else {
-    // LocalStorage used ONLY as read-only offline fallback when server/DB is completely unreachable
+  // 3. LocalStorage cache as offline fallback only when network/server is completely unreachable
+  try {
     const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (localData !== null) {
-      try {
-        finalResult = JSON.parse(localData);
-      } catch {
-        finalResult = [];
-      }
+      return JSON.parse(localData);
     }
+  } catch {
+    return [];
   }
 
-  // Sort by updatedAt or createdAt descending so newest is always at top
-  finalResult.sort((a, b) => {
-    const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
-    const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
-    return timeB - timeA;
-  });
-
-  // Deduplicate by ID cleanly
-  const uniqueMap = new Map<string, PropertyListing>();
-  for (const item of finalResult) {
-    if (!uniqueMap.has(item.id)) {
-      uniqueMap.set(item.id, item);
-    }
-  }
-  const deduplicated = Array.from(uniqueMap.values());
-
-  // Overwrite LocalStorage cache to stay EXACTLY in sync with authoritative server state
-  try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(deduplicated));
-  } catch (e) {
-    console.warn('Failed to sync listings cache to localStorage:', e);
-  }
-
-  return deduplicated;
+  return [];
 }
 
 export async function getListingBySlug(slug: string): Promise<PropertyListing | null> {
   if (!slug) return null;
   const normalizedSlug = slug.toLowerCase().trim();
 
-  const findMatchingListing = (list: PropertyListing[]): PropertyListing | null => {
-    // 1. Exact slug, ID, or previousSlugs alias match
-    let match = list.find(
-      (item) =>
-        item.slug.toLowerCase() === normalizedSlug ||
-        item.id === normalizedSlug ||
-        ((item as any).previousSlugs && Array.isArray((item as any).previousSlugs) && (item as any).previousSlugs.some((ps: string) => ps.toLowerCase() === normalizedSlug))
-    );
-    if (match) return match;
-
-    // 2. Normalized comparison stripping optional noise words (e.g. "luxury", "premium")
-    const stripNoise = (s: string) =>
-      s
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^(luxury|premium|featured|exclusive|prime|sale|for)-+/g, '')
-        .replace(/-(luxury|premium|featured|exclusive|prime|sale|for)-+/g, '-')
-        .replace(/-(luxury|premium|featured|exclusive|prime|sale|for)$/g, '')
-        .replace(/-\d+$/g, '')
-        .replace(/(^-|-$)+/g, '');
-
-    const strippedTarget = stripNoise(normalizedSlug);
-    if (strippedTarget) {
-      match = list.find(
-        (item) =>
-          stripNoise(item.slug) === strippedTarget ||
-          ((item as any).previousSlugs && Array.isArray((item as any).previousSlugs) && (item as any).previousSlugs.some((ps: string) => stripNoise(ps) === strippedTarget))
-      );
-      if (match) return match;
-    }
-
-    // 3. Core keywords subset match
-    const keywords = normalizedSlug.split(/[^a-z0-9]+/).filter((k) => k.length > 0);
-    if (keywords.length >= 2) {
-      match = list.find((item) => {
-        const itemSlug = item.slug.toLowerCase();
-        const itemTitle = item.title.toLowerCase();
-        const itemLoc = JSON.stringify(item.location || {}).toLowerCase();
-        return keywords.every((kw) => itemSlug.includes(kw) || itemTitle.includes(kw) || itemLoc.includes(kw));
-      });
-      if (match) return match;
-    }
-
-    // 4. Fallback: If single published listing exists, match if overlapping keywords
-    const published = list.filter((l) => l.status === 'published');
-    if (published.length === 1) {
-      const keywords = normalizedSlug.split(/[^a-z0-9]+/).filter((k) => k.length > 1);
-      const itemText = (published[0].slug + ' ' + published[0].title).toLowerCase();
-      const matchesCount = keywords.filter((kw) => itemText.includes(kw)).length;
-      if (matchesCount >= 2 || (keywords.length === 1 && matchesCount === 1)) {
-        return published[0];
-      }
-    }
-
-    return null;
-  };
-
   // 1. Try Backend Server API first
   try {
     const res = await fetch(`/api/listings/slug/${encodeURIComponent(normalizedSlug)}`);
     const json = await res.json();
-    if (json.success && json.data) {
-      if (!Array.isArray(json.data)) {
-        return json.data;
-      }
-      const match = findMatchingListing(json.data);
-      if (match) return match;
+    if (res.ok && json.success && json.data) {
+      return json.data;
     }
   } catch (e) {
     console.warn('Server API getListingBySlug error:', e);
@@ -259,30 +169,22 @@ export async function getListingBySlug(slug: string): Promise<PropertyListing | 
       if (!error && data) {
         return fromDbRow(data);
       }
-
-      // If exact query returns nothing, fetch all Supabase rows for fuzzy match
-      const allRows = await supabase.from('listings').select('*');
-      if (!allRows.error && allRows.data && allRows.data.length > 0) {
-        const parsed = allRows.data.map(fromDbRow);
-        const match = findMatchingListing(parsed);
-        if (match) return match;
-      }
     } catch (e) {
       console.warn('Supabase getListingBySlug query error:', e);
     }
   }
 
-  // 3. Fallback to combined getListings()
+  // 3. Fallback to cached getListings()
   const listings = await getListings();
-  const match = findMatchingListing(listings);
-  if (match) return match;
+  const match = listings.find(
+    (item) =>
+      item.slug.toLowerCase() === normalizedSlug ||
+      item.id === normalizedSlug ||
+      (Array.isArray((item as any).previousSlugs) &&
+        (item as any).previousSlugs.some((ps: string) => ps.toLowerCase() === normalizedSlug))
+  );
 
-  // 4. Standalone fallback for public pages ONLY (completely isolated from Admin Dashboard)
-  if (defaultListings.length > 0) {
-    return findMatchingListing(defaultListings);
-  }
-
-  return null;
+  return match || null;
 }
 
 export async function getListingById(id: string): Promise<PropertyListing | null> {
@@ -292,12 +194,8 @@ export async function getListingById(id: string): Promise<PropertyListing | null
   try {
     const res = await fetch(`/api/listings/${encodeURIComponent(id)}`);
     const json = await res.json();
-    if (json.success && json.data) {
-      if (!Array.isArray(json.data)) {
-        return json.data;
-      }
-      const match = json.data.find((item: PropertyListing) => item.id === id);
-      if (match) return match;
+    if (res.ok && json.success && json.data) {
+      return json.data;
     }
   } catch (e) {
     console.warn('Server API getListingById error:', e);
@@ -320,7 +218,7 @@ export async function getListingById(id: string): Promise<PropertyListing | null
     }
   }
 
-  // 3. Fallback to combined getListings()
+  // 3. Fallback to cached getListings()
   const listings = await getListings();
   return listings.find((item) => item.id === id) || null;
 }
@@ -350,7 +248,7 @@ export async function saveListing(listing: PropertyListing): Promise<PropertyLis
   if (!listing.createdAt) listing.createdAt = now;
   listing.updatedAt = now;
 
-  // Process data:image/ and blob: URLs by uploading to server/Supabase
+  // Process data:image/ and blob: URLs by uploading to Supabase Storage
   if (listing.images && listing.images.length > 0) {
     const updatedImages = await Promise.all(
       listing.images.map(async (img) => {
@@ -373,8 +271,6 @@ export async function saveListing(listing: PropertyListing): Promise<PropertyLis
             console.error('Failed to convert image URL to permanent storage:', e);
             throw new Error(`Failed to upload photo "${img.caption || 'Property Image'}" to permanent Supabase Storage: ${e?.message || e}`);
           }
-        } else if (img.url && (img.url.startsWith('/uploads/') || img.url.startsWith('uploads/'))) {
-          throw new Error(`Image URL "${img.url}" is a temporary local container path. All property images must be saved with permanent Supabase Storage URLs.`);
         }
         return img;
       })
@@ -383,156 +279,54 @@ export async function saveListing(listing: PropertyListing): Promise<PropertyLis
   }
 
   // 1. Save to Backend Server API
-  try {
-    const apiRes = await fetch('/api/listings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(listing),
-    });
-    const apiJson = await apiRes.json();
-    if (apiJson.success && apiJson.data) {
-      listing = apiJson.data;
-    }
-  } catch (e) {
-    console.warn('Backend API save warning:', e);
+  const apiRes = await fetch('/api/listings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(listing),
+  });
+  const apiJson = await apiRes.json();
+
+  if (!apiRes.ok || !apiJson.success) {
+    throw new Error(apiJson.error || `Failed to save listing (HTTP ${apiRes.status})`);
   }
 
-  // 2. Save to Supabase DB if configured
-  if (isSupabaseConfigured) {
-    try {
-      const dbRow = toDbRow(listing);
+  const savedListing: PropertyListing = apiJson.data || listing;
 
-      let { error } = await supabase
-        .from('listings')
-        .upsert([dbRow]);
-
-      if (error) {
-        const basicRow = {
-          id: listing.id,
-          slug: listing.slug,
-          title: listing.title,
-          tagline: listing.tagline || null,
-          price: listing.price || 0,
-          currency: listing.currency || '₹',
-          specs: listing.specs || {},
-          location: listing.location || {},
-          description: listing.description || '',
-          highlights: listing.highlights || [],
-          amenities: listing.amenities || [],
-          images: listing.images || [],
-          contact: listing.contact || {},
-          status: listing.status || 'published',
-          created_at: listing.createdAt || now,
-          updated_at: listing.updatedAt || now,
-        };
-
-        const res2 = await supabase.from('listings').upsert([basicRow]);
-        error = res2.error;
-      }
-
-      if (error) {
-        console.warn('Supabase write notice:', error.message || error);
-      }
-    } catch (e) {
-      console.warn('Exception while writing to Supabase:', e);
-    }
-  }
-
-  // 3. Sync to Local Storage as fast client cache
-  let localListings: PropertyListing[] = [];
+  // 2. Sync to Local Storage cache
   try {
-    const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (localData) {
-      localListings = JSON.parse(localData);
-    }
-  } catch {
-    localListings = [];
-  }
-
-  localListings = localListings.filter(
-    (item) => item.id !== listing.id && item.slug.toLowerCase() !== listing.slug.toLowerCase()
-  );
-  localListings.unshift(listing);
-
-  try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(localListings));
+    const cached = await getListings();
+    const updated = [savedListing, ...cached.filter((l) => l.id !== savedListing.id)];
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
   } catch (err) {
-    console.warn('localStorage quota warning:', err);
+    console.warn('localStorage sync error:', err);
   }
 
-  return listing;
+  return savedListing;
 }
 
 export async function deleteListing(id: string): Promise<boolean> {
-  let targetId = id;
-  let targetSlug = id;
+  if (!id) return false;
 
-  // 1. Identify target listing details if available in local state, server API, or cache
-  try {
-    let found: PropertyListing | undefined;
-    const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (localData) {
-      const parsed: PropertyListing[] = JSON.parse(localData);
-      found = parsed.find((l) => l.id === id || l.slug === id);
-    }
-    if (!found) {
-      const serverRes = await fetch(`/api/listings/${encodeURIComponent(id)}`);
-      const serverJson = await serverRes.json();
-      if (serverJson.success && serverJson.data) {
-        found = serverJson.data;
-      }
-    }
-    if (!found) {
-      const slugRes = await fetch(`/api/listings/slug/${encodeURIComponent(id)}`);
-      const slugJson = await slugRes.json();
-      if (slugJson.success && slugJson.data) {
-        found = slugJson.data;
-      }
-    }
+  // 1. Send DELETE request to Authoritative Backend Server API
+  const apiRes = await fetch(`/api/listings/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  const apiJson = await apiRes.json();
 
-    if (found) {
-      targetId = found.id;
-      targetSlug = found.slug;
-    }
-  } catch (e) {
-    console.warn('Listing lookup error before delete:', e);
+  if (!apiRes.ok || !apiJson.success) {
+    throw new Error(apiJson.error || `Server failed to delete listing (HTTP ${apiRes.status})`);
   }
 
-  // 2. Delete from LocalStorage immediately
+  const targetId = apiJson.deletedId || id;
+
+  // 2. Clear deleted listing from LocalStorage cache
   try {
     const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (localData) {
       const parsed: PropertyListing[] = JSON.parse(localData);
-      const filtered = parsed.filter(
-        (l) => l.id !== targetId && l.slug !== targetSlug && l.id !== id && l.slug !== id
-      );
+      const filtered = parsed.filter((l) => l.id !== targetId && l.id !== id);
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(filtered));
     }
   } catch (e) {
-    console.warn('localStorage set error during delete:', e);
-  }
-
-  // 3. Delete from Backend Server API
-  try {
-    await fetch(`/api/listings/${encodeURIComponent(targetId)}`, { method: 'DELETE' });
-    if (targetSlug && targetSlug !== targetId) {
-      await fetch(`/api/listings/${encodeURIComponent(targetSlug)}`, { method: 'DELETE' });
-    }
-  } catch (e) {
-    console.warn('Server API delete error:', e);
-  }
-
-  // 4. Delete from Supabase DB if configured
-  if (isSupabaseConfigured) {
-    try {
-      await supabase.from('listings').delete().or(`id.eq.${targetId},slug.eq.${targetSlug}`);
-      await supabase.from('listings').delete().eq('id', targetId);
-      if (targetSlug) {
-        await supabase.from('listings').delete().eq('slug', targetSlug);
-      }
-    } catch (e) {
-      console.warn('Supabase delete error:', e);
-    }
+    console.warn('localStorage cache clear error during delete:', e);
   }
 
   return true;

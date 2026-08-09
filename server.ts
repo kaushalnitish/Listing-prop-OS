@@ -387,113 +387,221 @@ INSTRUCTIONS & CONVERSIONS:
     }
   });
 
+function toDbRow(listing: any) {
+  const now = new Date().toISOString();
+  return {
+    id: String(listing.id),
+    slug: String(listing.slug || ''),
+    title: String(listing.title || ''),
+    tagline: listing.tagline ? String(listing.tagline) : null,
+    price: Number(listing.price) || 0,
+    currency: String(listing.currency || '₹'),
+    specs: typeof listing.specs === 'object' && listing.specs ? listing.specs : {},
+    location: typeof listing.location === 'object' && listing.location ? listing.location : {},
+    description: String(listing.description || ''),
+    highlights: Array.isArray(listing.highlights) ? listing.highlights : [],
+    amenities: Array.isArray(listing.amenities) ? listing.amenities : [],
+    images: Array.isArray(listing.images) ? listing.images : [],
+    contact: typeof listing.contact === 'object' && listing.contact ? listing.contact : {},
+    status: listing.status === 'draft' || listing.status === 'archived' ? listing.status : 'published',
+    seo_title: listing.seoTitle || listing.seo_title || null,
+    meta_description: listing.metaDescription || listing.meta_description || null,
+    previous_slugs: Array.isArray(listing.previousSlugs) ? listing.previousSlugs : (Array.isArray(listing.previous_slugs) ? listing.previous_slugs : []),
+    created_at: listing.createdAt || listing.created_at || now,
+    updated_at: listing.updatedAt || listing.updated_at || now,
+  };
+}
+
+function fromDbRow(row: any): any {
+  const now = new Date().toISOString();
+  return {
+    id: String(row.id),
+    slug: String(row.slug || ''),
+    title: String(row.title || ''),
+    tagline: row.tagline ? String(row.tagline) : undefined,
+    price: Number(row.price) || 0,
+    currency: String(row.currency || '₹'),
+    specs: typeof row.specs === 'object' && row.specs ? row.specs : {},
+    location: typeof row.location === 'object' && row.location ? row.location : {},
+    description: String(row.description || ''),
+    highlights: Array.isArray(row.highlights) ? row.highlights : [],
+    amenities: Array.isArray(row.amenities) ? row.amenities : [],
+    images: Array.isArray(row.images) ? row.images : [],
+    contact: typeof row.contact === 'object' && row.contact ? row.contact : {},
+    status: row.status === 'draft' || row.status === 'archived' ? row.status : 'published',
+    seoTitle: row.seo_title || row.seoTitle || undefined,
+    metaDescription: row.meta_description || row.metaDescription || undefined,
+    previousSlugs: Array.isArray(row.previous_slugs) ? row.previous_slugs : (Array.isArray(row.previousSlugs) ? row.previousSlugs : []),
+    createdAt: row.created_at || row.createdAt || now,
+    updatedAt: row.updated_at || row.updatedAt || now,
+  };
+}
+
+const stripNoise = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^(luxury|premium|featured|exclusive|prime|sale|for)-+/g, '')
+    .replace(/-(luxury|premium|featured|exclusive|prime|sale|for)-+/g, '-')
+    .replace(/-(luxury|premium|featured|exclusive|prime|sale|for)$/g, '')
+    .replace(/-\d+$/g, '')
+    .replace(/(^-|-$)+/g, '');
+
+function findMatchingListing(listings: any[], targetSlug: string): any | null {
+  const normalized = targetSlug.toLowerCase().trim();
+
+  // 1. Exact match on slug, ID, or previousSlugs alias
+  let match = listings.find(
+    (l: any) =>
+      (l.slug && l.slug.toLowerCase() === normalized) ||
+      l.id === normalized ||
+      (Array.isArray(l.previousSlugs) && l.previousSlugs.some((ps: string) => ps.toLowerCase() === normalized))
+  );
+  if (match) return match;
+
+  // 2. Normalized comparison stripping noise words
+  const strippedTarget = stripNoise(normalized);
+  if (strippedTarget) {
+    match = listings.find(
+      (l: any) =>
+        (l.slug && stripNoise(l.slug) === strippedTarget) ||
+        (Array.isArray(l.previousSlugs) && l.previousSlugs.some((ps: string) => stripNoise(ps) === strippedTarget))
+    );
+    if (match) return match;
+  }
+
+  // 3. Keyword subset matching
+  const keywords = normalized.split(/[^a-z0-9]+/).filter((k) => k.length > 0);
+  if (keywords.length >= 2) {
+    match = listings.find((l: any) => {
+      const itemSlug = (l.slug || '').toLowerCase();
+      const itemTitle = (l.title || '').toLowerCase();
+      const itemLocation = JSON.stringify(l.location || {}).toLowerCase();
+      return keywords.every(
+        (kw) => itemSlug.includes(kw) || itemTitle.includes(kw) || itemLocation.includes(kw)
+      );
+    });
+    if (match) return match;
+  }
+
+  return null;
+}
+
   // Get all listings
-  app.get("/api/listings", (req, res) => {
+  app.get("/api/listings", async (req, res) => {
     try {
-      const listings = getStoredListings();
+      if (!supabaseServer) {
+        return res.status(500).json({
+          success: false,
+          error: "Supabase database client is not configured on the server.",
+        });
+      }
+
+      const { data, error } = await supabaseServer
+        .from("listings")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Supabase error in GET /api/listings:", error);
+        return res.status(500).json({
+          success: false,
+          error: `Database error: ${error.message} (Code: ${error.code})`,
+        });
+      }
+
+      const listings = (data || []).map(fromDbRow);
       return res.json({ success: true, data: listings });
     } catch (err: any) {
       console.error("Error in GET /api/listings:", err);
-      return res.status(500).json({ success: false, error: "Failed to fetch listings" });
+      return res.status(500).json({ success: false, error: err.message || "Failed to fetch listings" });
     }
   });
 
   // Get listing by slug
-  app.get("/api/listings/slug/:slug", (req, res) => {
+  app.get("/api/listings/slug/:slug", async (req, res) => {
     try {
-      const slug = req.params.slug.toLowerCase().trim();
-      const listings = getStoredListings();
-
-      // 1. Exact match on slug, ID, or previousSlugs aliases
-      let match = listings.find(
-        (l: any) =>
-          (l.slug && l.slug.toLowerCase() === slug) ||
-          l.id === slug ||
-          (Array.isArray(l.previousSlugs) && l.previousSlugs.some((ps: string) => ps.toLowerCase() === slug))
-      );
-
-      // 2. Normalized comparison stripping optional noise words (e.g. "luxury", "premium")
-      if (!match) {
-        const stripNoise = (s: string) =>
-          s
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^(luxury|premium|featured|exclusive|prime|sale|for)-+/g, '')
-            .replace(/-(luxury|premium|featured|exclusive|prime|sale|for)-+/g, '-')
-            .replace(/-(luxury|premium|featured|exclusive|prime|sale|for)$/g, '')
-            .replace(/-\d+$/g, '')
-            .replace(/(^-|-$)+/g, '');
-
-        const strippedTarget = stripNoise(slug);
-        if (strippedTarget) {
-          match = listings.find(
-            (l: any) =>
-              (l.slug && stripNoise(l.slug) === strippedTarget) ||
-              (Array.isArray(l.previousSlugs) && l.previousSlugs.some((ps: string) => stripNoise(ps) === strippedTarget))
-          );
-        }
+      if (!supabaseServer) {
+        return res.status(500).json({
+          success: false,
+          error: "Supabase database client is not configured on the server.",
+        });
       }
 
-      // 3. Keyword subset matching (if requested slug keywords are all contained in stored slug/title)
-      if (!match) {
-        const keywords = slug.split(/[^a-z0-9]+/).filter((k) => k.length > 0);
-        if (keywords.length >= 2) {
-          match = listings.find((l: any) => {
-            const itemSlug = (l.slug || '').toLowerCase();
-            const itemTitle = (l.title || '').toLowerCase();
-            const itemLocation = JSON.stringify(l.location || {}).toLowerCase();
-            return keywords.every(
-              (kw) => itemSlug.includes(kw) || itemTitle.includes(kw) || itemLocation.includes(kw)
-            );
-          });
-        }
+      const slugParam = req.params.slug.toLowerCase().trim();
+      const { data, error } = await supabaseServer
+        .from("listings")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Supabase error in GET /api/listings/slug:", error);
+        return res.status(500).json({
+          success: false,
+          error: `Database error: ${error.message} (Code: ${error.code})`,
+        });
       }
 
-      // 4. Fallback: Single published listing match if requested keywords overlap significantly
-      if (!match) {
-        const published = listings.filter((l: any) => l.status === 'published');
-        if (published.length === 1) {
-          const keywords = slug.split(/[^a-z0-9]+/).filter((k) => k.length > 1);
-          const itemText = (published[0].slug + ' ' + published[0].title).toLowerCase();
-          const matchesCount = keywords.filter((kw) => itemText.includes(kw)).length;
-          if (matchesCount >= 2 || (keywords.length === 1 && matchesCount === 1)) {
-            match = published[0];
-          }
-        }
-      }
-
+      const listings = (data || []).map(fromDbRow);
+      const match = findMatchingListing(listings, slugParam);
       if (!match) {
         return res.status(404).json({ success: false, error: "Listing not found" });
       }
       return res.json({ success: true, data: match });
     } catch (err: any) {
       console.error("Error in GET /api/listings/slug/:slug:", err);
-      return res.status(500).json({ success: false, error: "Failed to fetch listing by slug" });
+      return res.status(500).json({ success: false, error: err.message || "Failed to fetch listing by slug" });
     }
   });
 
   // Get listing by ID
-  app.get("/api/listings/:id", (req, res) => {
+  app.get("/api/listings/:id", async (req, res) => {
     try {
+      if (!supabaseServer) {
+        return res.status(500).json({
+          success: false,
+          error: "Supabase database client is not configured on the server.",
+        });
+      }
+
       const id = req.params.id;
-      const listings = getStoredListings();
-      const match = listings.find((l: any) => l.id === id);
-      if (!match) {
+      const { data, error } = await supabaseServer
+        .from("listings")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Supabase error in GET /api/listings/:id:", error);
+        return res.status(500).json({
+          success: false,
+          error: `Database error: ${error.message} (Code: ${error.code})`,
+        });
+      }
+
+      if (!data) {
         return res.status(404).json({ success: false, error: "Listing not found" });
       }
-      return res.json({ success: true, data: match });
+      return res.json({ success: true, data: fromDbRow(data) });
     } catch (err: any) {
       console.error("Error in GET /api/listings/:id:", err);
-      return res.status(500).json({ success: false, error: "Failed to fetch listing by ID" });
+      return res.status(500).json({ success: false, error: err.message || "Failed to fetch listing by ID" });
     }
   });
 
   // Save or update listing
   app.post("/api/listings", async (req, res) => {
     try {
+      if (!supabaseServer) {
+        return res.status(500).json({
+          success: false,
+          error: "Supabase database client is not configured on the server.",
+        });
+      }
+
       const listing = req.body;
       if (!listing || !listing.id || !listing.slug) {
-        return res.status(400).json({ success: false, error: "Invalid listing object" });
+        return res.status(400).json({ success: false, error: "Invalid listing object. Required: id, slug" });
       }
 
       // Process any inline base64 images
@@ -512,10 +620,6 @@ INSTRUCTIONS & CONVERSIONS:
                 const supabaseUrl = await uploadBufferToSupabase(buffer, fileName, mimeType);
                 if (supabaseUrl) {
                   listing.images[i] = { ...img, url: supabaseUrl };
-                } else {
-                  const filePath = path.join(uploadsDir, fileName);
-                  fs.writeFileSync(filePath, buffer);
-                  listing.images[i] = { ...img, url: `/uploads/${fileName}` };
                 }
               }
             } catch (e) {
@@ -525,79 +629,86 @@ INSTRUCTIONS & CONVERSIONS:
         }
       }
 
-      const listings = getStoredListings();
-      // Match existing listing strictly by ID
-      const existingIdx = listings.findIndex((l: any) => l.id === listing.id);
-      if (existingIdx >= 0) {
-        const oldListing = listings[existingIdx];
-        const previousSlugs: string[] = Array.isArray(oldListing.previousSlugs)
-          ? [...oldListing.previousSlugs]
-          : [];
-        if (oldListing.slug && oldListing.slug !== listing.slug && !previousSlugs.includes(oldListing.slug)) {
-          previousSlugs.push(oldListing.slug);
-        }
-        const merged = {
-          ...oldListing,
-          ...listing,
-          previousSlugs,
-          updatedAt: new Date().toISOString(),
-        };
-        listings[existingIdx] = merged;
-        saveStoredListings(listings);
-        return res.json({ success: true, data: merged });
-      } else {
-        // Resolve slug collision if another listing shares the same slug
-        let targetSlug = listing.slug;
-        let counter = 1;
-        while (listings.some((l: any) => l.slug === targetSlug && l.id !== listing.id)) {
-          targetSlug = `${listing.slug}-${counter}`;
-          counter++;
-        }
-        listing.slug = targetSlug;
-        if (!listing.createdAt) listing.createdAt = new Date().toISOString();
-        listing.updatedAt = new Date().toISOString();
+      const dbRow = toDbRow(listing);
+      const { data, error } = await supabaseServer
+        .from("listings")
+        .upsert([dbRow])
+        .select();
 
-        listings.unshift(listing);
-        saveStoredListings(listings);
-        return res.json({ success: true, data: listing });
+      if (error) {
+        console.error("Supabase upsert error in POST /api/listings:", error);
+        return res.status(500).json({
+          success: false,
+          error: `Failed to save listing to Supabase: ${error.message} (Code: ${error.code})`,
+        });
       }
+
+      const savedListing = data && data.length > 0 ? fromDbRow(data[0]) : listing;
+      return res.json({ success: true, data: savedListing });
     } catch (err: any) {
       console.error("Error in POST /api/listings:", err);
-      return res.status(500).json({ success: false, error: "Failed to save listing" });
+      return res.status(500).json({ success: false, error: err.message || "Failed to save listing" });
     }
   });
 
   // Delete listing
-  app.delete("/api/listings/:id", (req, res) => {
+  app.delete("/api/listings/:id", async (req, res) => {
     try {
-      const id = req.params.id;
-      let listings = getStoredListings();
-
-      const targets = listings.filter((l: any) => l.id === id || l.slug === id);
-      for (const target of targets) {
-        if (target && Array.isArray(target.images)) {
-          for (const img of target.images) {
-            if (img && typeof img.url === "string" && img.url.startsWith("/uploads/")) {
-              try {
-                const fileName = path.basename(img.url);
-                const filePath = path.join(uploadsDir, fileName);
-                if (fs.existsSync(filePath)) {
-                  fs.unlinkSync(filePath);
-                }
-              } catch (e) {
-                console.warn("Could not delete image file during listing cleanup:", e);
-              }
-            }
-          }
-        }
+      if (!supabaseServer) {
+        return res.status(500).json({
+          success: false,
+          error: "Supabase database client is not configured on the server.",
+        });
       }
 
-      listings = listings.filter((l: any) => l.id !== id && l.slug !== id);
-      saveStoredListings(listings);
-      return res.json({ success: true });
+      const id = req.params.id;
+      if (!id) {
+        return res.status(400).json({ success: false, error: "Missing listing ID" });
+      }
+
+      // 1. Delete record from Supabase
+      const { error: delError } = await supabaseServer
+        .from("listings")
+        .delete()
+        .eq("id", id);
+
+      if (delError) {
+        console.error("Supabase delete error in DELETE /api/listings/:id:", delError);
+        return res.status(500).json({
+          success: false,
+          error: `Failed to delete record from Supabase: ${delError.message} (Code: ${delError.code})`,
+        });
+      }
+
+      // 2. Perform POST-DELETE VERIFICATION: check that row no longer exists in Supabase
+      const { data: checkData, error: checkError } = await supabaseServer
+        .from("listings")
+        .select("id")
+        .eq("id", id);
+
+      if (checkError) {
+        console.error("Supabase post-delete check error:", checkError);
+        return res.status(500).json({
+          success: false,
+          error: `Failed to verify deletion in Supabase: ${checkError.message}`,
+        });
+      }
+
+      if (checkData && checkData.length > 0) {
+        return res.status(500).json({
+          success: false,
+          error: "Deletion failed: record still exists in Supabase after DELETE operation.",
+        });
+      }
+
+      return res.json({
+        success: true,
+        deletedId: id,
+        message: "Record confirmed deleted from Supabase",
+      });
     } catch (err: any) {
       console.error("Error in DELETE /api/listings/:id:", err);
-      return res.status(500).json({ success: false, error: "Failed to delete listing" });
+      return res.status(500).json({ success: false, error: err.message || "Failed to delete listing" });
     }
   });
 

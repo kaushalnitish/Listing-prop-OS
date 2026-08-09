@@ -45,16 +45,7 @@ async function getStoredListings(): Promise<any[]> {
     try {
       const { data, error } = await supabase.from("listings").select("*").order("created_at", { ascending: false });
       if (!error && data && data.length > 0) {
-        const dbListings = data.map(fromDbRow);
-        // Merge with defaults if not present
-        const dbIds = new Set(dbListings.map((l: any) => l.id));
-        const combined = [...dbListings];
-        for (const def of defaultListings) {
-          if (!dbIds.has(def.id)) {
-            combined.push(def);
-          }
-        }
-        return combined;
+        return data.map(fromDbRow);
       }
     } catch (e) {
       console.warn("Netlify function Supabase fetch error:", e);

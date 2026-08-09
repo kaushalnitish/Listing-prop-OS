@@ -83,7 +83,7 @@ export async function getListings(): Promise<PropertyListing[]> {
   let serverListings: PropertyListing[] = [];
   let serverSuccess = false;
 
-  // 1. Fetch from Backend Server API
+  // 1. Fetch from Authoritative Backend Server API
   try {
     const res = await fetch('/api/listings');
     const json = await res.json();
@@ -111,7 +111,7 @@ export async function getListings(): Promise<PropertyListing[]> {
         error = fallback.error;
       }
 
-      if (!error && data) {
+      if (!error && data && data.length > 0) {
         dbListings = data.map(fromDbRow);
       }
     } catch (e) {
@@ -119,56 +119,56 @@ export async function getListings(): Promise<PropertyListing[]> {
     }
   }
 
-  // 3. Fetch from LocalStorage
-  let localListings: PropertyListing[] = [];
-  const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
-  if (localData !== null) {
-    try {
-      const parsed: PropertyListing[] = JSON.parse(localData);
-      localListings = parsed.filter(
-        (l) => l.id !== 'sample-villa-1' && l.slug !== 'the-grand-luminary-villa' && !l.id.startsWith('sample-')
-      );
-    } catch {
-      localListings = [];
-    }
-  }
+  let finalResult: PropertyListing[] = [];
 
-  let combined: PropertyListing[] = [];
   if (serverSuccess) {
-    combined = [...serverListings];
-    const existingIds = new Set(combined.map((l) => l.id));
-    const existingSlugs = new Set(combined.map((l) => l.slug.toLowerCase()));
-
-    for (const item of [...dbListings, ...localListings, ...defaultListings]) {
-      if (!existingIds.has(item.id) && !existingSlugs.has(item.slug.toLowerCase())) {
-        combined.push(item);
-        existingIds.add(item.id);
-        existingSlugs.add(item.slug.toLowerCase());
+    // Server is the single authoritative source of truth
+    const map = new Map<string, PropertyListing>();
+    serverListings.forEach((l) => map.set(l.id, l));
+    dbListings.forEach((l) => {
+      if (!map.has(l.id)) {
+        map.set(l.id, l);
+      }
+    });
+    finalResult = Array.from(map.values());
+  } else if (dbListings.length > 0) {
+    finalResult = dbListings;
+  } else {
+    // LocalStorage used ONLY as read-only offline fallback when server/DB is completely unreachable
+    const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (localData !== null) {
+      try {
+        finalResult = JSON.parse(localData);
+      } catch {
+        finalResult = [];
       }
     }
-  } else {
-    const map = new Map<string, PropertyListing>();
-    defaultListings.forEach((l) => map.set(l.id, l));
-    localListings.forEach((l) => map.set(l.id, l));
-    dbListings.forEach((l) => map.set(l.id, l));
-    combined = Array.from(map.values());
   }
 
   // Sort by updatedAt or createdAt descending so newest is always at top
-  combined.sort((a, b) => {
+  finalResult.sort((a, b) => {
     const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
     const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
     return timeB - timeA;
   });
 
-  // Sync back to LocalStorage
+  // Deduplicate by ID cleanly
+  const uniqueMap = new Map<string, PropertyListing>();
+  for (const item of finalResult) {
+    if (!uniqueMap.has(item.id)) {
+      uniqueMap.set(item.id, item);
+    }
+  }
+  const deduplicated = Array.from(uniqueMap.values());
+
+  // Overwrite LocalStorage cache to stay EXACTLY in sync with authoritative server state
   try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(combined));
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(deduplicated));
   } catch (e) {
-    console.warn('Failed to sync combined listings to localStorage:', e);
+    console.warn('Failed to sync listings cache to localStorage:', e);
   }
 
-  return combined;
+  return deduplicated;
 }
 
 export async function getListingBySlug(slug: string): Promise<PropertyListing | null> {
@@ -274,7 +274,15 @@ export async function getListingBySlug(slug: string): Promise<PropertyListing | 
 
   // 3. Fallback to combined getListings()
   const listings = await getListings();
-  return findMatchingListing(listings);
+  const match = findMatchingListing(listings);
+  if (match) return match;
+
+  // 4. Standalone fallback for public pages ONLY (completely isolated from Admin Dashboard)
+  if (defaultListings.length > 0) {
+    return findMatchingListing(defaultListings);
+  }
+
+  return null;
 }
 
 export async function getListingById(id: string): Promise<PropertyListing | null> {

@@ -10,7 +10,7 @@
 
 [[redirects]]
   from = "/api/listings/*"
-  to = "/.netlify/functions/listings"
+  to = "/.netlify/functions/listings?path=:splat"
   status = 200
 
 [[redirects]]

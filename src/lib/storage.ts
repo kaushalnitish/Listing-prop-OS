@@ -1,5 +1,10 @@
 import { PropertyListing } from '../types';
 import { supabase, isSupabaseConfigured } from './supabase';
+import defaultListingsData from '../../data/listings.json';
+
+const defaultListings: PropertyListing[] = Array.isArray(defaultListingsData)
+  ? (defaultListingsData as PropertyListing[])
+  : [];
 
 const LOCAL_STORAGE_KEY = 'internal_property_listings';
 
@@ -134,7 +139,7 @@ export async function getListings(): Promise<PropertyListing[]> {
     const existingIds = new Set(combined.map((l) => l.id));
     const existingSlugs = new Set(combined.map((l) => l.slug.toLowerCase()));
 
-    for (const item of [...dbListings, ...localListings]) {
+    for (const item of [...dbListings, ...localListings, ...defaultListings]) {
       if (!existingIds.has(item.id) && !existingSlugs.has(item.slug.toLowerCase())) {
         combined.push(item);
         existingIds.add(item.id);
@@ -143,6 +148,7 @@ export async function getListings(): Promise<PropertyListing[]> {
     }
   } else {
     const map = new Map<string, PropertyListing>();
+    defaultListings.forEach((l) => map.set(l.id, l));
     localListings.forEach((l) => map.set(l.id, l));
     dbListings.forEach((l) => map.set(l.id, l));
     combined = Array.from(map.values());

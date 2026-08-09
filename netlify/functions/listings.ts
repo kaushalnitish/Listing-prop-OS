@@ -1,20 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
-import fs from "fs";
-import path from "path";
+import defaultListingsData from "../../data/listings.json";
 
-function loadDefaultListings(): any[] {
-  try {
-    const jsonPath = path.resolve(process.cwd(), "data", "listings.json");
-    if (fs.existsSync(jsonPath)) {
-      return JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
-    }
-  } catch (e) {
-    console.warn("Could not read data/listings.json in Netlify function:", e);
-  }
-  return [];
-}
-
-const defaultListings = loadDefaultListings();
+const defaultListings: any[] = Array.isArray(defaultListingsData) ? defaultListingsData : [];
 
 // Initialize Supabase Client for Netlify Function
 const rawSupabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
@@ -140,15 +127,27 @@ function findMatchingListing(listings: any[], targetSlug: string): any | null {
 export const handler = async (event: any) => {
   const httpMethod = event.httpMethod;
 
-  // Extract true request path from event.rawUrl or event.path
-  let fullUrlPath = event.path || "";
-  if (event.rawUrl) {
+  // Extract true request path from query params, headers, rawUrl, or path
+  let fullUrlPath = "";
+  if (event.queryStringParameters && event.queryStringParameters.path) {
+    fullUrlPath = "/api/listings/" + event.queryStringParameters.path;
+  } else if (event.headers && event.headers["x-nf-original-pathname"]) {
+    fullUrlPath = event.headers["x-nf-original-pathname"];
+  } else if (event.headers && event.headers["x-original-url"]) {
+    try {
+      fullUrlPath = new URL(event.headers["x-original-url"], "https://example.com").pathname;
+    } catch (e) {}
+  } else if (event.rawUrl) {
     try {
       const parsedUrl = new URL(event.rawUrl);
-      fullUrlPath = parsedUrl.pathname;
-    } catch (e) {
-      // fallback to event.path
-    }
+      if (!parsedUrl.pathname.includes("/.netlify/functions")) {
+        fullUrlPath = parsedUrl.pathname;
+      }
+    } catch (e) {}
+  }
+
+  if (!fullUrlPath) {
+    fullUrlPath = event.path || "";
   }
 
   const headers = {

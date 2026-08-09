@@ -139,7 +139,17 @@ function findMatchingListing(listings: any[], targetSlug: string): any | null {
 
 export const handler = async (event: any) => {
   const httpMethod = event.httpMethod;
-  const path = event.path || "";
+
+  // Extract true request path from event.rawUrl or event.path
+  let fullUrlPath = event.path || "";
+  if (event.rawUrl) {
+    try {
+      const parsedUrl = new URL(event.rawUrl);
+      fullUrlPath = parsedUrl.pathname;
+    } catch (e) {
+      // fallback to event.path
+    }
+  }
 
   const headers = {
     "Content-Type": "application/json",
@@ -156,8 +166,8 @@ export const handler = async (event: any) => {
     const listings = await getStoredListings();
 
     // Route: GET /api/listings/slug/:slug
-    if (httpMethod === "GET" && path.includes("/slug/")) {
-      const parts = path.split("/slug/");
+    if (httpMethod === "GET" && fullUrlPath.includes("/slug/")) {
+      const parts = fullUrlPath.split("/slug/");
       const slugParam = decodeURIComponent(parts[parts.length - 1] || "");
       const match = findMatchingListing(listings, slugParam);
 
@@ -177,7 +187,7 @@ export const handler = async (event: any) => {
 
     // Route: GET /api/listings/:id or GET /api/listings
     if (httpMethod === "GET") {
-      const pathParts = path.split("/").filter(Boolean);
+      const pathParts = fullUrlPath.split("/").filter(Boolean);
       const lastPart = pathParts[pathParts.length - 1];
 
       if (lastPart && lastPart !== "listings" && lastPart !== "functions") {

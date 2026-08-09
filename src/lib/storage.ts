@@ -231,7 +231,11 @@ export async function getListingBySlug(slug: string): Promise<PropertyListing | 
     const res = await fetch(`/api/listings/slug/${encodeURIComponent(normalizedSlug)}`);
     const json = await res.json();
     if (json.success && json.data) {
-      return json.data;
+      if (!Array.isArray(json.data)) {
+        return json.data;
+      }
+      const match = findMatchingListing(json.data);
+      if (match) return match;
     }
   } catch (e) {
     console.warn('Server API getListingBySlug error:', e);
@@ -248,6 +252,14 @@ export async function getListingBySlug(slug: string): Promise<PropertyListing | 
 
       if (!error && data) {
         return fromDbRow(data);
+      }
+
+      // If exact query returns nothing, fetch all Supabase rows for fuzzy match
+      const allRows = await supabase.from('listings').select('*');
+      if (!allRows.error && allRows.data && allRows.data.length > 0) {
+        const parsed = allRows.data.map(fromDbRow);
+        const match = findMatchingListing(parsed);
+        if (match) return match;
       }
     } catch (e) {
       console.warn('Supabase getListingBySlug query error:', e);
@@ -267,7 +279,11 @@ export async function getListingById(id: string): Promise<PropertyListing | null
     const res = await fetch(`/api/listings/${encodeURIComponent(id)}`);
     const json = await res.json();
     if (json.success && json.data) {
-      return json.data;
+      if (!Array.isArray(json.data)) {
+        return json.data;
+      }
+      const match = json.data.find((item: PropertyListing) => item.id === id);
+      if (match) return match;
     }
   } catch (e) {
     console.warn('Server API getListingById error:', e);

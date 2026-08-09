@@ -3,6 +3,59 @@ import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
+import { createClient } from "@supabase/supabase-js";
+
+// Initialize Supabase Client on Server
+const rawSupabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
+const supabaseUrl = rawSupabaseUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+
+const isServerSupabaseConfigured = Boolean(
+  supabaseUrl && supabaseKey && !supabaseUrl.includes("placeholder")
+);
+
+const supabaseServer = isServerSupabaseConfigured
+  ? createClient(supabaseUrl, supabaseKey)
+  : null;
+
+async function uploadBufferToSupabase(buffer: Buffer, fileName: string, mimeType: string = "image/jpeg"): Promise<string | null> {
+  if (!supabaseServer) return null;
+  try {
+    const filePath = `listings/${fileName}`;
+    const { error: uploadErr } = await supabaseServer.storage
+      .from("property-images")
+      .upload(filePath, buffer, {
+        contentType: mimeType,
+        upsert: true,
+      });
+
+    if (uploadErr) {
+      console.warn("Supabase Storage upload warning on server:", uploadErr.message);
+      if (uploadErr.message?.includes("not found") || uploadErr.message?.includes("Bucket")) {
+        try {
+          await supabaseServer.storage.createBucket("property-images", { public: true });
+          const { error: retryErr } = await supabaseServer.storage
+            .from("property-images")
+            .upload(filePath, buffer, { contentType: mimeType, upsert: true });
+          if (retryErr) console.warn("Supabase retry upload error:", retryErr.message);
+        } catch (bErr) {
+          console.warn("Bucket creation error:", bErr);
+        }
+      }
+    }
+
+    const { data } = supabaseServer.storage
+      .from("property-images")
+      .getPublicUrl(filePath);
+
+    if (data?.publicUrl) {
+      return data.publicUrl;
+    }
+  } catch (err) {
+    console.error("Error uploading buffer to Supabase Storage:", err);
+  }
+  return null;
+}
 
 async function startServer() {
   const app = express();
@@ -290,7 +343,7 @@ INSTRUCTIONS & CONVERSIONS:
   });
 
   // Image Upload API Route
-  app.post("/api/upload-image", (req, res) => {
+  app.post("/api/upload-image", async (req, res) => {
     try {
       const { image } = req.body;
       if (!image) {
@@ -299,11 +352,13 @@ INSTRUCTIONS & CONVERSIONS:
 
       let buffer: Buffer;
       let ext = "jpg";
+      let mimeType = "image/jpeg";
 
       if (image.startsWith("data:")) {
-        const matches = image.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
+        const matches = image.match(/^data:(image\/[a-zA-Z0-9]+);base64,(.+)$/);
         if (matches) {
-          ext = matches[1];
+          mimeType = matches[1];
+          ext = matches[1].split("/")[1] || "jpg";
           buffer = Buffer.from(matches[2], "base64");
         } else {
           const parts = image.split(",");
@@ -314,6 +369,14 @@ INSTRUCTIONS & CONVERSIONS:
       }
 
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
+
+      // Try uploading to Supabase Storage first
+      const supabaseUrl = await uploadBufferToSupabase(buffer, fileName, mimeType);
+      if (supabaseUrl) {
+        return res.json({ success: true, url: supabaseUrl });
+      }
+
+      // Fallback to local server uploads directory if Supabase is unconfigured
       const filePath = path.join(uploadsDir, fileName);
       fs.writeFileSync(filePath, buffer);
 
@@ -422,7 +485,7 @@ INSTRUCTIONS & CONVERSIONS:
   });
 
   // Save or update listing
-  app.post("/api/listings", (req, res) => {
+  app.post("/api/listings", async (req, res) => {
     try {
       const listing = req.body;
       if (!listing || !listing.id || !listing.slug) {
@@ -431,24 +494,31 @@ INSTRUCTIONS & CONVERSIONS:
 
       // Process any inline base64 images
       if (Array.isArray(listing.images)) {
-        listing.images = listing.images.map((img: any) => {
-          if (img.url && img.url.startsWith("data:image/")) {
+        for (let i = 0; i < listing.images.length; i++) {
+          const img = listing.images[i];
+          if (img && typeof img.url === "string" && img.url.startsWith("data:image/")) {
             try {
-              const matches = img.url.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
+              const matches = img.url.match(/^data:(image\/[a-zA-Z0-9]+);base64,(.+)$/);
               if (matches) {
-                const ext = matches[1];
+                const mimeType = matches[1];
+                const ext = matches[1].split("/")[1] || "jpg";
                 const buffer = Buffer.from(matches[2], "base64");
                 const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
-                const filePath = path.join(uploadsDir, fileName);
-                fs.writeFileSync(filePath, buffer);
-                return { ...img, url: `/uploads/${fileName}` };
+
+                const supabaseUrl = await uploadBufferToSupabase(buffer, fileName, mimeType);
+                if (supabaseUrl) {
+                  listing.images[i] = { ...img, url: supabaseUrl };
+                } else {
+                  const filePath = path.join(uploadsDir, fileName);
+                  fs.writeFileSync(filePath, buffer);
+                  listing.images[i] = { ...img, url: `/uploads/${fileName}` };
+                }
               }
             } catch (e) {
               console.error("Failed to convert inline base64 image:", e);
             }
           }
-          return img;
-        });
+        }
       }
 
       const listings = getStoredListings();

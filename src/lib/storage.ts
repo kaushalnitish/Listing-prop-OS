@@ -502,15 +502,16 @@ export async function deleteListing(id: string): Promise<boolean> {
 }
 
 export async function uploadImageToSupabaseStorage(file: File): Promise<string> {
+  const fileExt = file.name.split('.').pop() || 'jpg';
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+  const filePath = `listings/${fileName}`;
+
+  // 1. Client-side Supabase Storage upload if configured
   if (isSupabaseConfigured) {
     try {
-      const fileExt = file.name.split('.').pop() || 'jpg';
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `listings/${fileName}`;
-
       const { error: uploadError } = await supabase.storage
         .from('property-images')
-        .upload(filePath, file);
+        .upload(filePath, file, { upsert: true, contentType: file.type || 'image/jpeg' });
 
       if (!uploadError) {
         const { data } = supabase.storage
@@ -520,13 +521,15 @@ export async function uploadImageToSupabaseStorage(file: File): Promise<string> 
         if (data?.publicUrl) {
           return data.publicUrl;
         }
+      } else {
+        console.warn('Supabase client upload failed, delegating to server:', uploadError);
       }
     } catch (err) {
-      console.warn('Supabase Storage upload error:', err);
+      console.warn('Supabase Storage client upload exception:', err);
     }
   }
 
-  // Upload to backend server endpoint for permanent storage URL
+  // 2. Delegate to server endpoint /api/upload-image which handles Supabase Storage server-side
   try {
     const base64 = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
@@ -542,12 +545,12 @@ export async function uploadImageToSupabaseStorage(file: File): Promise<string> 
     });
 
     const json = await res.json();
-    if (json.success && json.url) {
+    if (json.success && json.url && !json.url.startsWith('blob:')) {
       return json.url;
     }
+    throw new Error(json.error || 'Server upload failed to return a valid URL');
   } catch (err) {
     console.error('Server upload failed:', err);
+    throw err;
   }
-
-  return URL.createObjectURL(file);
 }

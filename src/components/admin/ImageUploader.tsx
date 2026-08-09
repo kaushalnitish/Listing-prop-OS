@@ -88,12 +88,9 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         try {
           permanentUrl = await uploadImageToSupabaseStorage(file);
         } catch (uploadErr) {
-          console.warn('Upload error, falling back to compression:', uploadErr);
-          permanentUrl = await compressImage(file, {
-            maxWidth: 1920,
-            maxHeight: 1080,
-            quality: 0.85,
-          });
+          console.error('Upload error for file:', file.name, uploadErr);
+          alert(`Failed to upload ${file.name} to storage. Please ensure your network/storage settings are configured.`);
+          continue;
         }
 
         const caption = file.name.replace(/\.[^/.]+$/, '');

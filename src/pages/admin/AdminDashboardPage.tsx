@@ -326,6 +326,10 @@ export const AdminDashboardPage: React.FC = () => {
                       item.images?.[0]?.url ||
                       'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80'
                     }
+                    onError={(e) => {
+                      e.currentTarget.src =
+                        'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80';
+                    }}
                     alt={item.title}
                     width="800"
                     height="500"

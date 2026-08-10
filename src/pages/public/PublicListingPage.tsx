@@ -120,7 +120,7 @@ export const PublicListingPage: React.FC = () => {
 
   return (
     <PublicLayout>
-      <div className="min-h-screen bg-[#FAF9F6] pb-12 w-full max-w-full overflow-x-hidden">
+      <div className="w-full max-w-full overflow-x-hidden bg-[#FAF9F6]">
         {/* 1. Hero Image Gallery */}
         <HeroGallery
           images={listing.images || []}
@@ -149,7 +149,7 @@ export const PublicListingPage: React.FC = () => {
         <PropertyExperience listing={listing} />
 
         {/* Content Layout Container */}
-        <div className="max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-8 lg:px-12 pt-6 sm:pt-10 pb-28 sm:pb-36 space-y-8 sm:space-y-12">
+        <div className="max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-8 lg:px-12 pt-6 sm:pt-10 pb-20 sm:pb-24 space-y-8 sm:space-y-12">
           {/* 5. Property Details & Specs Grid */}
           <PropertySpecs
             price={listing.price}

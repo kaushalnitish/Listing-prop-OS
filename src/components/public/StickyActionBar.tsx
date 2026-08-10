@@ -33,7 +33,7 @@ export const StickyActionBar: React.FC<StickyActionBarProps> = ({
   const agencyTitle = contact.agencyName || contact.agentRole || 'Property Advisor';
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-stone-200/80 p-2 sm:p-4 shadow-lg w-full max-w-full overflow-hidden">
+    <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-stone-200/80 p-2 sm:p-4 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] sm:pb-4 shadow-lg w-full max-w-full overflow-hidden">
       <div className="max-w-5xl mx-auto flex items-center justify-between gap-2 sm:gap-4 w-full min-w-0">
         {/* Agent Info Snippet */}
         <div className="hidden sm:flex items-center gap-3 shrink-0 min-w-0">

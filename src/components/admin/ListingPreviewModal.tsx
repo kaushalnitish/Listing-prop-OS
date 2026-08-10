@@ -115,7 +115,7 @@ export const ListingPreviewModal: React.FC<ListingPreviewModalProps> = ({
       </div>
 
       {/* 2. Public Template Preview Content */}
-      <div className="flex-1 bg-[#FAF9F6] pb-28 sm:pb-36 w-full max-w-full overflow-x-hidden">
+      <div className="flex-1 bg-[#FAF9F6] pb-20 sm:pb-24 w-full max-w-full overflow-x-hidden">
         {/* Hero Gallery */}
         <HeroGallery
           images={listing.images || []}

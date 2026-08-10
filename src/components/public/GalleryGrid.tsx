@@ -15,15 +15,15 @@ export const GalleryGrid: React.FC<GalleryGridProps> = ({
   if (!images || images.length === 0) return null;
 
   return (
-    <div className="rounded-2xl sm:rounded-3xl bg-white/75 backdrop-blur-md border border-stone-200/80 p-6 sm:p-8 shadow-sm space-y-6 w-full max-w-full">
-      <div className="flex items-center justify-between">
-        <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-stone-500">
+    <div className="rounded-2xl sm:rounded-3xl bg-white/75 backdrop-blur-md border border-stone-200/80 p-4 sm:p-8 shadow-sm space-y-6 w-full max-w-full min-w-0">
+      <div className="flex items-center justify-between gap-2 min-w-0">
+        <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-stone-500 min-w-0 truncate">
           Architecture & Interiors ({images.length})
         </h2>
-        <span className="text-xs font-mono text-stone-500 hidden sm:inline">Select photo to view full frame</span>
+        <span className="text-xs font-mono text-stone-500 hidden sm:inline shrink-0">Select photo to view full frame</span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 min-w-0">
         {images.map((img, idx) => {
           const displayCaption = getDisplayCaption(img.caption);
           return (

@@ -72,38 +72,43 @@ export const ListingPreviewModal: React.FC<ListingPreviewModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950 flex flex-col">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950 flex flex-col w-full max-w-full">
       {/* 1. Top Publishing Controls Bar */}
-      <div className="sticky top-0 z-50 bg-zinc-950/90 backdrop-blur-xl border-b border-zinc-800/90 p-3 sm:p-4 px-4 sm:px-8 shadow-2xl flex items-center justify-end gap-3">
+      <div className="sticky top-0 z-50 bg-zinc-950/90 backdrop-blur-xl border-b border-zinc-800/90 p-2.5 sm:p-4 px-3 sm:px-8 shadow-2xl flex items-center justify-between sm:justify-end gap-2 sm:gap-3 w-full max-w-full min-w-0">
+        <span className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-zinc-400 truncate sm:hidden">
+          Live Preview
+        </span>
         {/* Action Buttons */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           <button
             type="button"
             onClick={onBackToEdit}
             disabled={saving}
-            className="px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 text-xs font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50"
+            className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 text-xs font-medium flex items-center gap-1 sm:gap-1.5 transition-colors disabled:opacity-50"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to Edit</span>
+            <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline">Back to Edit</span>
+            <span className="sm:hidden">Edit</span>
           </button>
 
           <button
             type="button"
             onClick={onSaveDraft}
             disabled={saving}
-            className="px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 text-xs font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50"
+            className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 text-xs font-medium flex items-center gap-1 sm:gap-1.5 transition-colors disabled:opacity-50"
           >
-            <Save className="w-3.5 h-3.5" />
-            <span>Save Draft</span>
+            <Save className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline">Save Draft</span>
+            <span className="sm:hidden">Draft</span>
           </button>
 
           <button
             type="button"
             onClick={onPublish}
             disabled={saving}
-            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-lg shadow-amber-500/20 disabled:opacity-50"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center gap-1 sm:gap-1.5 transition-all shadow-lg shadow-amber-500/20 disabled:opacity-50"
           >
-            <Globe className="w-3.5 h-3.5 stroke-[2.5]" />
+            <Globe className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
             <span>{saving ? 'Publishing...' : 'Publish'}</span>
           </button>
         </div>

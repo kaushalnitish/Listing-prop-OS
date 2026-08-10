@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { PropertyImage } from '../../types';
+import { getDisplayCaption } from '../../lib/imageOrganizer';
 import {
   ChevronLeft,
   ChevronRight,
-  Camera,
-  Share2,
-  Check,
   Maximize2,
 } from 'lucide-react';
 
@@ -64,7 +62,7 @@ export const HeroGallery: React.FC<HeroGalleryProps> = ({
               e.currentTarget.src =
                 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=80';
             }}
-            alt={currentImage.caption || propertyTitle}
+            alt={getDisplayCaption(currentImage.caption) || propertyTitle}
             width="1600"
             height="900"
             loading="eager"

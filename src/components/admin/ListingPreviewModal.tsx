@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { PropertyListing } from '../../types';
 import { HeroGallery } from '../public/HeroGallery';
 import { PropertySpecs } from '../public/PropertySpecs';
+import { PropertyHighlightsBand } from '../public/PropertyHighlightsBand';
+import { PropertyExperience } from '../public/PropertyExperience';
 import { PropertyStory } from '../public/PropertyStory';
 import { GalleryGrid } from '../public/GalleryGrid';
 import { LocationMap } from '../public/LocationMap';
@@ -117,8 +119,8 @@ export const ListingPreviewModal: React.FC<ListingPreviewModalProps> = ({
           onOpenLightbox={handleOpenLightbox}
         />
 
-        {/* Content Container */}
-        <div className="max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-8 lg:px-12 pt-6 sm:pt-10 space-y-8 sm:space-y-12">
+        {/* Title, Headline & Price Header */}
+        <div className="max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-8 lg:px-12 pt-6 sm:pt-10">
           <PropertySpecs
             price={listing.price}
             currency={listing.currency || '$'}
@@ -126,6 +128,27 @@ export const ListingPreviewModal: React.FC<ListingPreviewModalProps> = ({
             tagline={listing.tagline}
             specs={listing.specs}
             location={listing.location}
+            hideDetails={true}
+          />
+        </div>
+
+        {/* Dark Feature Section: PROPERTY HIGHLIGHTS */}
+        <PropertyHighlightsBand listing={listing} />
+
+        {/* Property Experience Section: SPACES THAT ELEVATE YOUR EVERYDAY */}
+        <PropertyExperience listing={listing} />
+
+        {/* Content Container */}
+        <div className="max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-8 lg:px-12 pt-6 sm:pt-10 space-y-8 sm:space-y-12">
+          {/* Property Details & Specs Grid */}
+          <PropertySpecs
+            price={listing.price}
+            currency={listing.currency || '$'}
+            title={listing.title}
+            tagline={listing.tagline}
+            specs={listing.specs}
+            location={listing.location}
+            hideHeader={true}
           />
 
           <PropertyStory

@@ -80,26 +80,31 @@ export const PropertyStory: React.FC<PropertyStoryProps> = ({
     <div className="space-y-8 sm:space-y-12 w-full max-w-full">
       {/* Narrative Overview — Section E: Warm White Glass Card */}
       <div className="rounded-2xl sm:rounded-3xl bg-white/75 backdrop-blur-md border border-stone-200/80 p-6 sm:p-8 lg:p-10 shadow-sm relative overflow-hidden space-y-4 w-full">
-        <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-stone-500">
+        <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-stone-500 font-normal">
           Overview
         </h2>
-        <div className="text-sm sm:text-base text-stone-700 leading-relaxed sm:leading-7 font-normal whitespace-pre-line space-y-4 break-words">
+        <div className="text-sm sm:text-base text-stone-700 leading-relaxed sm:leading-relaxed font-normal whitespace-pre-line space-y-4 break-words">
           {description}
         </div>
       </div>
 
-      {/* KEY HIGHLIGHTS — Section D: Warm White Glass Card */}
+      {/* KEY HIGHLIGHTS — Editorial Grid with subtle dividers */}
       {highlights.length > 0 && (
         <div className="rounded-2xl sm:rounded-3xl bg-white/85 backdrop-blur-md border border-stone-200/80 p-6 sm:p-8 shadow-sm relative overflow-hidden space-y-6 w-full">
           <div className="relative z-10 space-y-6">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-800 shrink-0" />
-              <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-stone-600">
-                Key Highlights
-              </h2>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-3.5 h-3.5 text-stone-600 shrink-0" />
+                <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-stone-500 font-normal">
+                  Key Highlights
+                </h2>
+              </div>
+              <p className="text-xl sm:text-2xl font-normal text-stone-900 tracking-tight">
+                Everything you need, right where you need it.
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 pt-2">
               {highlights.map((highlight, idx) => (
                 <div
                   key={idx}
@@ -108,7 +113,7 @@ export const PropertyStory: React.FC<PropertyStoryProps> = ({
                   <div className="p-2 rounded-lg bg-white border border-stone-200/70 shrink-0 mt-0.5 shadow-2xs">
                     {getHighlightIcon(highlight)}
                   </div>
-                  <p className="text-xs sm:text-sm font-normal text-stone-800 leading-relaxed pt-0.5 break-words min-w-0">
+                  <p className="text-xs sm:text-sm font-normal text-stone-700 leading-relaxed pt-0.5 break-words min-w-0">
                     {highlight}
                   </p>
                 </div>
@@ -121,7 +126,7 @@ export const PropertyStory: React.FC<PropertyStoryProps> = ({
       {/* Property Amenities List — Warm White Glass Container */}
       {amenities.length > 0 && (
         <div className="rounded-2xl sm:rounded-3xl bg-white/75 backdrop-blur-md border border-stone-200/80 p-6 sm:p-8 shadow-sm space-y-4 w-full">
-          <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-stone-500">
+          <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-stone-500 font-normal">
             Property Amenities
           </h2>
 
@@ -129,7 +134,7 @@ export const PropertyStory: React.FC<PropertyStoryProps> = ({
             {amenities.map((amenity) => (
               <span
                 key={amenity}
-                className="px-3.5 py-1.5 rounded-full bg-white border border-stone-200/80 text-xs font-normal text-stone-800 tracking-wide hover:border-stone-300 transition-colors shadow-2xs"
+                className="px-3.5 py-1.5 rounded-full bg-white border border-stone-200/80 text-xs font-normal text-stone-700 tracking-wide hover:border-stone-300 transition-colors shadow-2xs"
               >
                 {amenity}
               </span>

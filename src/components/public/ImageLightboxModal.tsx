@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { PropertyImage } from '../../types';
+import { getDisplayCaption } from '../../lib/imageOrganizer';
 import { X, ChevronLeft, ChevronRight, Camera } from 'lucide-react';
 
 interface ImageLightboxModalProps {
@@ -32,6 +33,7 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
   if (!isOpen || images.length === 0) return null;
 
   const currentImage = images[currentIndex] || images[0];
+  const displayCaption = getDisplayCaption(currentImage.caption);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-2 sm:p-6 animate-in fade-in duration-200 w-full max-w-full overflow-hidden">
@@ -55,22 +57,27 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
 
       {/* Main Image Container */}
       <div className="relative w-full max-w-5xl h-full max-h-[85vh] flex flex-col items-center justify-center">
-        <img
-          src={currentImage.url}
-          onError={(e) => {
-            e.currentTarget.src =
-              'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=80';
-          }}
-          alt={currentImage.caption || `Property image ${currentIndex + 1}`}
-          className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl"
-          referrerPolicy="no-referrer"
-        />
+        {/* Desktop 16:9 Frame with Inner Vignette Shadow & Contain */}
+        <div className="relative w-full aspect-auto sm:aspect-video max-h-[75vh] sm:max-h-[80vh] flex items-center justify-center rounded-2xl bg-zinc-950/80 border border-white/10 shadow-2xl overflow-hidden group">
+          <img
+            src={currentImage.url}
+            onError={(e) => {
+              e.currentTarget.src =
+                'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=80';
+            }}
+            alt={displayCaption || `Property image ${currentIndex + 1}`}
+            className="w-full h-full object-contain max-h-[75vh] sm:max-h-[80vh] rounded-lg transition-transform duration-300"
+            referrerPolicy="no-referrer"
+          />
+          {/* Subtle Inner Shadow / Vignette Overlay for Depth */}
+          <div className="pointer-events-none absolute inset-0 rounded-2xl shadow-[inset_0_0_80px_rgba(0,0,0,0.7)] z-10" />
+        </div>
 
-        {/* Caption Banner */}
-        {currentImage.caption && (
-          <div className="mt-4 px-4 py-2 bg-zinc-900/80 border border-zinc-800/80 rounded-xl max-w-lg text-center">
+        {/* Caption Banner - Rendered ONLY if an explicit human-written property caption exists */}
+        {displayCaption && (
+          <div className="mt-4 px-4 py-2 bg-zinc-900/80 border border-zinc-800/80 rounded-xl max-w-lg text-center z-20">
             <p className="text-xs text-zinc-300 font-medium">
-              {currentImage.caption}
+              {displayCaption}
             </p>
           </div>
         )}

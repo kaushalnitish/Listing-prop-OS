@@ -6,6 +6,8 @@ import { PropertyListing } from '../../types';
 
 import { HeroGallery } from '../../components/public/HeroGallery';
 import { PropertySpecs } from '../../components/public/PropertySpecs';
+import { PropertyHighlightsBand } from '../../components/public/PropertyHighlightsBand';
+import { PropertyExperience } from '../../components/public/PropertyExperience';
 import { PropertyStory } from '../../components/public/PropertyStory';
 import { GalleryGrid } from '../../components/public/GalleryGrid';
 import { LocationMap } from '../../components/public/LocationMap';
@@ -127,9 +129,8 @@ export const PublicListingPage: React.FC = () => {
           onOpenLightbox={handleOpenLightbox}
         />
 
-        {/* Locked Page Content Layout Container */}
-        <div className="max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-8 lg:px-12 pt-6 sm:pt-10 pb-28 sm:pb-36 space-y-8 sm:space-y-12">
-          {/* 2 & 3. Price, Property Title & Quick Specs */}
+        {/* 2. Price, Property Title Header Block */}
+        <div className="max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-8 lg:px-12 pt-6 sm:pt-10">
           <PropertySpecs
             price={listing.price}
             currency={listing.currency || '$'}
@@ -137,26 +138,47 @@ export const PublicListingPage: React.FC = () => {
             tagline={listing.tagline}
             specs={listing.specs}
             location={listing.location}
+            hideDetails={true}
+          />
+        </div>
+
+        {/* 3. Dark Feature Section: PROPERTY HIGHLIGHTS */}
+        <PropertyHighlightsBand listing={listing} />
+
+        {/* 4. Property Experience Section: SPACES THAT ELEVATE YOUR EVERYDAY */}
+        <PropertyExperience listing={listing} />
+
+        {/* Content Layout Container */}
+        <div className="max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-8 lg:px-12 pt-6 sm:pt-10 pb-28 sm:pb-36 space-y-8 sm:space-y-12">
+          {/* 5. Property Details & Specs Grid */}
+          <PropertySpecs
+            price={listing.price}
+            currency={listing.currency || '$'}
+            title={listing.title}
+            tagline={listing.tagline}
+            specs={listing.specs}
+            location={listing.location}
+            hideHeader={true}
           />
 
-          {/* 4. Property Story (Narrative, Highlights, Amenities) */}
+          {/* 6. Property Story (Narrative, Key Highlights, Amenities) */}
           <PropertyStory
             description={listing.description}
             highlights={listing.highlights}
             amenities={listing.amenities}
           />
 
-          {/* 5. Photo Gallery Grid */}
+          {/* 7. Photo Gallery Grid */}
           <GalleryGrid
             images={listing.images || []}
             onOpenLightbox={handleOpenLightbox}
           />
 
-          {/* 6. Location & Google Maps */}
+          {/* 8. Location & Google Maps */}
           <LocationMap location={listing.location} />
         </div>
 
-        {/* 7. Sticky Action Bar (WhatsApp + Call) */}
+        {/* 9. Sticky Action Bar */}
         <StickyActionBar
           contact={contactInfo}
           propertyTitle={listing.title}

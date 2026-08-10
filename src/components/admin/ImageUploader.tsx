@@ -5,6 +5,7 @@ import { uploadImageToSupabaseStorage } from '../../lib/storage';
 import {
   autoOrganizeImages,
   detectCategory,
+  getDisplayCaption,
   IMAGE_CATEGORIES,
   ImageCategory,
 } from '../../lib/imageOrganizer';
@@ -94,8 +95,8 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           continue;
         }
 
-        const caption = file.name.replace(/\.[^/.]+$/, '');
-        const category = detectCategory(caption);
+        const category = detectCategory(file.name);
+        const caption = '';
 
         newImages.push({
           id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
@@ -297,7 +298,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
               <div className="aspect-[16/10] relative bg-zinc-950 overflow-hidden">
                 <img
                   src={img.url}
-                  alt={img.caption || `Property image ${idx + 1}`}
+                  alt={getDisplayCaption(img.caption) || `Property image ${idx + 1}`}
                   width="800"
                   height="500"
                   loading="lazy"

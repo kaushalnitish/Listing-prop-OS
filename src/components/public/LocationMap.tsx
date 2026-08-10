@@ -29,10 +29,10 @@ export const LocationMap: React.FC<LocationMapProps> = ({ location }) => {
     <div className="rounded-2xl sm:rounded-3xl bg-white/75 backdrop-blur-md border border-stone-200/80 p-6 sm:p-8 shadow-sm space-y-6 w-full max-w-full">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1 max-w-xl">
-          <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-stone-500">
+          <h2 className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-stone-500 font-normal">
             Location & Context
           </h2>
-          <p className="text-sm sm:text-base font-normal text-stone-900 flex items-center gap-2 min-w-0">
+          <p className="text-xs sm:text-sm font-normal text-stone-700 flex items-center gap-2 min-w-0">
             <Navigation className="w-4 h-4 text-emerald-800 shrink-0" />
             <span className="break-words min-w-0">{fullAddress}</span>
           </p>

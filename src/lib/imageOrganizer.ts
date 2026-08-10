@@ -138,6 +138,32 @@ export function detectCategory(text?: string): ImageCategory {
 }
 
 /**
+ * Returns the caption if it's an intentional human-written property caption,
+ * or null if it's empty, undefined, or matches an uploaded filename/screenshot pattern.
+ */
+export function getDisplayCaption(caption?: string): string | null {
+  if (!caption || typeof caption !== 'string') return null;
+  const trimmed = caption.trim();
+  if (!trimmed) return null;
+
+  // Check if string matches filename patterns, extensions, screenshots, or URLs
+  const isFileNamePattern =
+    /\.(jpe?g|png|webp|gif|svg|bmp|heic|tiff?)$/i.test(trimmed) ||
+    /^(screenshot|img|dsc|pxl|photo|file|image|uuid)[_ -]/i.test(trimmed) ||
+    /screenshot_\d+/i.test(trimmed) ||
+    /www\.[a-z0-9-]+\.[a-z]+/i.test(trimmed) ||
+    /https?:\/\//i.test(trimmed) ||
+    /^[a-f0-9]{8}-[a-f0-9]{4}-/i.test(trimmed) ||
+    /^[a-z0-9_-]+\.(com|net|org|io|co)$/i.test(trimmed);
+
+  if (isFileNamePattern) {
+    return null;
+  }
+
+  return trimmed;
+}
+
+/**
  * Automatically arranges property photos in optimal real estate viewing order:
  * 1. Exterior (Cover image automatically set to strongest exterior image)
  * 2. Living Room

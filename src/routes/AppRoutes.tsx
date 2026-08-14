@@ -1,27 +1,32 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage';
 import { CreateListingPage } from '../pages/admin/CreateListingPage';
 import { EditListingPage } from '../pages/admin/EditListingPage';
-import { AdminLoginPage } from '../pages/admin/AdminLoginPage';
 import { PublicListingPage } from '../pages/public/PublicListingPage';
+import { PrivateAccessPage } from '../pages/auth/PrivateAccessPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
-import { ENABLE_AUTH } from '../lib/auth';
 
 export const AppRoutes: React.FC = () => {
   return (
     <Routes>
-      {/* Root redirect to Admin Workspace */}
-      <Route path="/" element={<Navigate to="/admin" replace />} />
+      {/* Explicit Private Access / Login Screen */}
+      <Route path="/access" element={<PrivateAccessPage />} />
+      <Route path="/login" element={<PrivateAccessPage />} />
+      <Route path="/admin/login" element={<PrivateAccessPage />} />
 
-      {/* Admin Login - Redirects to /admin when auth is disabled for internal dev */}
+      {/* Root Route - Protected */}
       <Route
-        path="/admin/login"
-        element={ENABLE_AUTH ? <AdminLoginPage /> : <Navigate to="/admin" replace />}
+        path="/"
+        element={
+          <ProtectedRoute>
+            <AdminDashboardPage />
+          </ProtectedRoute>
+        }
       />
 
-      {/* Admin Routes */}
+      {/* Dashboard Routes - Protected */}
       <Route
         path="/admin"
         element={
@@ -31,6 +36,24 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <AdminDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <AdminDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Create Listing Routes - Protected */}
+      <Route
         path="/admin/new"
         element={
           <ProtectedRoute>
@@ -38,6 +61,24 @@ export const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/create"
+        element={
+          <ProtectedRoute>
+            <CreateListingPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/new"
+        element={
+          <ProtectedRoute>
+            <CreateListingPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Edit Listing Routes - Protected */}
       <Route
         path="/admin/edit/:id"
         element={
@@ -47,6 +88,16 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
+        path="/edit/:id"
+        element={
+          <ProtectedRoute>
+            <EditListingPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Admin Preview Route - Protected */}
+      <Route
         path="/admin/preview/:id"
         element={
           <ProtectedRoute>
@@ -55,14 +106,41 @@ export const AppRoutes: React.FC = () => {
         }
       />
 
-      {/* Public Pages */}
-      <Route path="/p/:slug" element={<PublicListingPage />} />
-      <Route path="/sample" element={<PublicListingPage />} />
-      <Route path="/preview" element={<PublicListingPage />} />
+      {/* Property Showcase / Public Pages - Protected while ACCESS_CONTROL_ENABLED is true */}
+      <Route
+        path="/p/:slug"
+        element={
+          <ProtectedRoute>
+            <PublicListingPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sample"
+        element={
+          <ProtectedRoute>
+            <PublicListingPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/preview"
+        element={
+          <ProtectedRoute>
+            <PublicListingPage />
+          </ProtectedRoute>
+        }
+      />
 
-      {/* Fallback 404 Route */}
-      <Route path="*" element={<NotFoundPage />} />
+      {/* Fallback 404 Route - Protected */}
+      <Route
+        path="*"
+        element={
+          <ProtectedRoute>
+            <NotFoundPage />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 };
-

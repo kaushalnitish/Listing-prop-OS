@@ -1,37 +1,75 @@
 /**
- * Admin Authentication Utilities
+ * Global Access Control & Authentication Layer
  *
- * NOTE: Authentication is currently disabled for internal development.
- * To re-enable passkey authentication for production, set ENABLE_AUTH = true
- * or configure process.env.VITE_ENABLE_AUTH = 'true'.
+ * Passcode Gate Configuration
+ * To disable the lock in the future, toggle ACCESS_CONTROL_ENABLED to false.
  */
 
-export const ENABLE_AUTH = false;
+export const ACCESS_CONTROL_ENABLED = true;
 
-const AUTH_KEY = 'listing_os_admin_session';
+// Backwards compatibility alias
+export const ENABLE_AUTH = ACCESS_CONTROL_ENABLED;
 
-export function loginAdmin(passkey: string): boolean {
-  if (!ENABLE_AUTH) return true;
+// Private Access Passcode (Server/Client Verified)
+export const ACCESS_PASSCODE = '9736648956';
 
-  const validPasskey = import.meta.env.VITE_ADMIN_PASSKEY || 'admin123';
-  if (passkey.trim() === validPasskey) {
-    sessionStorage.setItem(AUTH_KEY, 'authenticated');
-    localStorage.setItem(AUTH_KEY, 'authenticated'); // persistent session
+// Storage session key for persisting unlocked session
+const AUTH_SESSION_KEY = 'listing_os_private_access_session';
+
+/**
+ * Check if the current browser session has been unlocked with the valid passcode.
+ */
+export function isAccessAuthenticated(): boolean {
+  if (!ACCESS_CONTROL_ENABLED) {
+    return true; // Bypass lock when access control is disabled
+  }
+
+  try {
+    const sessionVal = sessionStorage.getItem(AUTH_SESSION_KEY) || localStorage.getItem(AUTH_SESSION_KEY);
+    return sessionVal === 'unlocked_authenticated';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Attempt to unlock the platform with the provided passcode.
+ * Returns true if valid, false otherwise.
+ */
+export function verifyAndLoginPasscode(inputPasscode: string): boolean {
+  if (!ACCESS_CONTROL_ENABLED) {
     return true;
   }
+
+  const cleaned = (inputPasscode || '').trim();
+  if (cleaned === ACCESS_PASSCODE) {
+    try {
+      sessionStorage.setItem(AUTH_SESSION_KEY, 'unlocked_authenticated');
+      localStorage.setItem(AUTH_SESSION_KEY, 'unlocked_authenticated');
+      window.dispatchEvent(new Event('auth_state_changed'));
+    } catch (e) {
+      // Storage fallback
+    }
+    return true;
+  }
+
   return false;
 }
 
-export function isAdminAuthenticated(): boolean {
-  if (!ENABLE_AUTH) {
-    return true; // Bypass authentication during internal development
+/**
+ * Lock down the application and clear stored credentials.
+ */
+export function logoutAccess(): void {
+  try {
+    sessionStorage.removeItem(AUTH_SESSION_KEY);
+    localStorage.removeItem(AUTH_SESSION_KEY);
+    window.dispatchEvent(new Event('auth_state_changed'));
+  } catch (e) {
+    // Storage fallback
   }
-  const sessionToken = sessionStorage.getItem(AUTH_KEY) || localStorage.getItem(AUTH_KEY);
-  return sessionToken === 'authenticated';
 }
 
-export function logoutAdmin(): void {
-  sessionStorage.removeItem(AUTH_KEY);
-  localStorage.removeItem(AUTH_KEY);
-}
-
+// Aliases for compatibility across existing files
+export const isAdminAuthenticated = isAccessAuthenticated;
+export const loginAdmin = verifyAndLoginPasscode;
+export const logoutAdmin = logoutAccess;

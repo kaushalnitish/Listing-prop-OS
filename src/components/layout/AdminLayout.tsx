@@ -26,7 +26,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   const handleLogout = () => {
     logoutAdmin();
-    navigate('/admin/login', { replace: true });
+    navigate('/access', { replace: true });
   };
 
   const navItems = [

@@ -8,7 +8,7 @@
 
 export const ENABLE_AUTH = false;
 
-const AUTH_KEY = 'lumina_admin_session';
+const AUTH_KEY = 'listing_os_admin_session';
 
 export function loginAdmin(passkey: string): boolean {
   if (!ENABLE_AUTH) return true;

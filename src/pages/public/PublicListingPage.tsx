@@ -72,6 +72,8 @@ export const PublicListingPage: React.FC = () => {
         found = await getListingById(id);
       } else if (slug) {
         found = await getListingBySlug(slug);
+      } else {
+        found = await getListingBySlug('the-grand-luminary-villa');
       }
 
       if (isMounted) {

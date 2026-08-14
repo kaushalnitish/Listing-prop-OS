@@ -1,6 +1,9 @@
 import { PropertyListing } from '../types';
 import { supabase, isSupabaseConfigured } from './supabase';
 import defaultListingsData from '../../data/listings.json';
+import { SAMPLE_PROPERTY_LISTING } from '../data/sampleListing';
+
+export { SAMPLE_PROPERTY_LISTING };
 
 const defaultListings: PropertyListing[] = Array.isArray(defaultListingsData)
   ? (defaultListingsData as PropertyListing[])
@@ -8,8 +11,8 @@ const defaultListings: PropertyListing[] = Array.isArray(defaultListingsData)
 
 const LOCAL_STORAGE_KEY = 'internal_property_listings';
 
-// Sample data removed - using real database & user-created property data only
-export const sampleListings: PropertyListing[] = [];
+// Sample listing fallback for preview purposes
+export const sampleListings: PropertyListing[] = [SAMPLE_PROPERTY_LISTING];
 
 export async function ensureUniqueSlug(rawSlug: string, currentId?: string): Promise<string> {
   const listings = await getListings();
@@ -184,11 +187,28 @@ export async function getListingBySlug(slug: string): Promise<PropertyListing | 
         (item as any).previousSlugs.some((ps: string) => ps.toLowerCase() === normalizedSlug))
   );
 
-  return match || null;
+  if (match) return match;
+
+  // 4. Sample listing fallback
+  if (
+    normalizedSlug === 'the-grand-luminary-villa' ||
+    normalizedSlug === 'sample' ||
+    normalizedSlug === 'sample-preview' ||
+    normalizedSlug === 'sample-listing' ||
+    normalizedSlug === 'sample-property'
+  ) {
+    return SAMPLE_PROPERTY_LISTING;
+  }
+
+  return null;
 }
 
 export async function getListingById(id: string): Promise<PropertyListing | null> {
   if (!id) return null;
+
+  if (id === 'sample-luxury-listing-1') {
+    return SAMPLE_PROPERTY_LISTING;
+  }
 
   // 1. Try Backend Server API first
   try {

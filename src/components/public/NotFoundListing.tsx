@@ -35,15 +35,21 @@ export const NotFoundListing: React.FC<NotFoundListingProps> = ({ requestedSlug 
         </p>
       </div>
 
-      <div className="pt-2 flex justify-center w-full">
+      <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 w-full">
         <button
           type="button"
           onClick={handleGoBack}
-          className="px-6 py-2.5 rounded-full bg-white/80 hover:bg-white text-stone-800 border border-stone-200/80 backdrop-blur-md font-medium text-xs flex items-center justify-center gap-2 transition-all shadow-xs hover:shadow-md active:scale-[0.98]"
+          className="w-full sm:w-auto px-6 py-2.5 rounded-full bg-white/80 hover:bg-white text-stone-800 border border-stone-200/80 backdrop-blur-md font-medium text-xs flex items-center justify-center gap-2 transition-all shadow-xs hover:shadow-md active:scale-[0.98]"
         >
           <ArrowLeft className="w-3.5 h-3.5 text-stone-600" />
-          <span>Return to Previous Page</span>
+          <span>Return to Previous</span>
         </button>
+        <a
+          href="/sample"
+          className="w-full sm:w-auto px-6 py-2.5 rounded-full bg-stone-900 hover:bg-stone-800 text-white font-medium text-xs flex items-center justify-center gap-2 transition-all shadow-xs hover:shadow-md active:scale-[0.98]"
+        >
+          <span>View Sample Property</span>
+        </a>
       </div>
     </div>
   );

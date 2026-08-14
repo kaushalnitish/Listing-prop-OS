@@ -1,6 +1,6 @@
 {
-  "name": "Internal Property Listing Generator",
-  "description": "Internal agency tool for generating mobile-first premium property listings with Gemini AI and shareable public pages.",
+  "name": "Listing OS",
+  "description": "Listing OS - Modern real estate listing engine and property showcase platform.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -59,8 +59,8 @@ export const ListingPreviewModal: React.FC<ListingPreviewModalProps> = ({
     agentRole: 'Principal Director',
     phone: '+1 (305) 890-4421',
     whatsappNumber: '13058904421',
-    email: 'alexander@luminaryestates.com',
-    agencyName: 'Luminary Real Estate Group',
+    email: 'alexander@listingos.internal',
+    agencyName: 'Listing OS Estates Group',
   };
 
   const handleCopyLink = () => {

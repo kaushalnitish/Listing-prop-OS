@@ -57,6 +57,8 @@ export const AppRoutes: React.FC = () => {
 
       {/* Public Pages */}
       <Route path="/p/:slug" element={<PublicListingPage />} />
+      <Route path="/sample" element={<PublicListingPage />} />
+      <Route path="/preview" element={<PublicListingPage />} />
 
       {/* Fallback 404 Route */}
       <Route path="*" element={<NotFoundPage />} />

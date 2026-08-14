@@ -447,6 +447,126 @@ const stripNoise = (s: string) =>
     .replace(/-\d+$/g, '')
     .replace(/(^-|-$)+/g, '');
 
+const FALLBACK_SAMPLE_LISTING = {
+  id: 'sample-luxury-listing-1',
+  slug: 'the-grand-luminary-villa',
+  title: 'The Grand Luminary Villa',
+  tagline: 'Modern Architectural Masterpiece with Private Infinity Pool & Panoramic Coastal Views',
+  price: 4850000,
+  currency: '$',
+  specs: {
+    bedrooms: 5,
+    bathrooms: 6,
+    squareFeet: 6400,
+    lotSize: '0.75 Acres',
+    yearBuilt: 2025,
+    propertyType: 'Villa',
+    parkingSpaces: 3,
+  },
+  location: {
+    address: '428 Ocean Drive, Star Island',
+    neighborhood: 'Star Island',
+    city: 'Miami Beach',
+    state: 'FL',
+    zipCode: '33139',
+    country: 'United States',
+    coordinates: {
+      lat: 25.7781,
+      lng: -80.1506,
+    },
+    nearbyHighlights: [
+      'Private Marina & Yacht Club (3 mins)',
+      'South Beach Oceanfront Promenade (5 mins)',
+      'Lincoln Road Cultural Arts District (8 mins)',
+      'Miami International Airport (15 mins)',
+    ],
+  },
+  description: `Rising above the sparkling shoreline of Star Island, The Grand Luminary Villa stands as a beacon of modern architectural refinement and bespoke luxury. Conceived by award-winning architectural visionaries, the estate seamlessly dissolves the barrier between indoor tranquility and outdoor serenity through soaring 14-foot floor-to-ceiling glass apertures, museum-grade concrete finishes, and warm natural walnut accents.\n\nEvery facet of the residence is curated for effortless entertaining and private sanctuary. The expansive open-concept great room flows directly onto a travertine-clad terrace featuring a 60-foot heated infinity pool, private wellness cabana, and outdoor summer kitchen. Upstairs, the primary penthouse wing commands sweeping 270-degree sunset ocean panoramas with a private spa bath, custom Poliform dressing rooms, and secluded sun decks.`,
+  highlights: [
+    '60-Foot Heated Saltwater Infinity Pool & Private Sun Deck',
+    'Custom Poliform Kitchen with Sub-Zero & Wolf Commercial Suite',
+    'Floor-to-Ceiling 14ft Acoustic Low-E Impact Glass Walls',
+    'Private Primary Wing with Oceanfront Balcony & Marble Spa',
+    'Smart Home Crestron Automation, Climate & Security Control',
+    '3-Car Temperature-Controlled Showroom Garage',
+  ],
+  amenities: [
+    'Private Infinity Pool',
+    'Ocean View',
+    'Gated Society',
+    'Smart Home Automation',
+    'Spa & Sauna',
+    'Covered Parking',
+    'Chef\'s Kitchen',
+    'Private Elevator',
+    'Wine Cellar',
+    '24/7 Concierge & Security',
+  ],
+  images: [
+    {
+      id: 'sample-img-1',
+      url: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1600&q=80',
+      caption: 'Main Architectural Elevation & Infinity Pool',
+      category: 'Exterior',
+      isCover: true,
+      order: 1,
+    },
+    {
+      id: 'sample-img-2',
+      url: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=80',
+      caption: 'Grand Open-Concept Living Salon with 14ft Ceilings',
+      category: 'Living Room',
+      isCover: false,
+      order: 2,
+    },
+    {
+      id: 'sample-img-3',
+      url: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1600&q=80',
+      caption: 'Custom Chef\'s Kitchen with Calacatta Gold Marble Island',
+      category: 'Kitchen',
+      isCover: false,
+      order: 3,
+    },
+    {
+      id: 'sample-img-4',
+      url: 'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1600&q=80',
+      caption: 'Primary Penthouse Suite with Ocean View Terrace',
+      category: 'Bedroom',
+      isCover: false,
+      order: 4,
+    },
+    {
+      id: 'sample-img-5',
+      url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=80',
+      caption: 'Sunset Outdoor Lounge & Firepit Patio',
+      category: 'Exterior',
+      isCover: false,
+      order: 5,
+    },
+    {
+      id: 'sample-img-6',
+      url: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1600&q=80',
+      caption: 'Spa-Inspired Primary Bathroom with Freestanding Soaking Tub',
+      category: 'Bathroom',
+      isCover: false,
+      order: 6,
+    },
+  ],
+  contact: {
+    agentName: 'Alexander Vance',
+    agentRole: 'Principal Director',
+    phone: '+1 (305) 890-4421',
+    whatsappNumber: '13058904421',
+    email: 'alexander@listingos.internal',
+    agencyName: 'Listing OS Estates',
+  },
+  status: 'published',
+  seoTitle: 'The Grand Luminary Villa | Luxury Real Estate Showcase',
+  metaDescription: 'Experience The Grand Luminary Villa, a 6,400 sq ft modern architectural estate on Star Island with infinity pool and panoramic ocean vistas.',
+  createdAt: '2026-08-01T12:00:00.000Z',
+  updatedAt: '2026-08-01T12:00:00.000Z',
+};
+
 function findMatchingListing(listings: any[], targetSlug: string): any | null {
   const normalized = targetSlug.toLowerCase().trim();
 
@@ -482,6 +602,17 @@ function findMatchingListing(listings: any[], targetSlug: string): any | null {
       );
     });
     if (match) return match;
+  }
+
+  // 4. Sample listing fallback
+  if (
+    normalized === 'the-grand-luminary-villa' ||
+    normalized === 'sample' ||
+    normalized === 'sample-preview' ||
+    normalized === 'sample-listing' ||
+    normalized === 'sample-property'
+  ) {
+    return FALLBACK_SAMPLE_LISTING;
   }
 
   return null;
@@ -580,6 +711,9 @@ function findMatchingListing(listings: any[], targetSlug: string): any | null {
       }
 
       if (!data) {
+        if (id === 'sample-luxury-listing-1') {
+          return res.json({ success: true, data: FALLBACK_SAMPLE_LISTING });
+        }
         return res.status(404).json({ success: false, error: "Listing not found" });
       }
       return res.json({ success: true, data: fromDbRow(data) });

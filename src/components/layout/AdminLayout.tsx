@@ -66,7 +66,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             <Building2 className="w-4 h-4" />
           </div>
           <span className="font-semibold text-sm tracking-tight text-stone-900">
-            Lumina
+            Listing OS
           </span>
         </Link>
 
@@ -103,7 +103,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               </div>
               <div>
                 <span className="font-bold text-sm tracking-tight text-stone-900 block leading-none">
-                  Lumina Studio
+                  Listing OS
                 </span>
                 <span className="text-[11px] text-stone-400 font-medium">
                   Property Platform
@@ -232,7 +232,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
         {/* Footer */}
         <footer className="px-8 py-6 border-t border-stone-200/80 text-xs text-stone-400 flex flex-col sm:flex-row items-center justify-between gap-2 bg-white/50">
-          <p>© {new Date().getFullYear()} Lumina Studio — Property Management Platform</p>
+          <p>© {new Date().getFullYear()} Listing OS — Property Management Platform</p>
           <p className="text-stone-400 font-normal">Internal Property Listing Engine</p>
         </footer>
       </div>

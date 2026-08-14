@@ -33,7 +33,7 @@ export const AdminLoginPage: React.FC = () => {
       {/* Top Brand Marker */}
       <div className="w-full max-w-sm flex items-center justify-between pt-4">
         <span className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">
-          Lumina Studio
+          Listing OS
         </span>
         <span className="text-[11px] font-mono text-zinc-600">
           v1.0 • Internal

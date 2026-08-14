@@ -22,7 +22,7 @@ export const Navbar: React.FC = () => {
           </div>
           <div>
             <span className="text-sm font-bold tracking-tight text-stone-900 block leading-none">
-              Lumina Studio
+              Listing OS
             </span>
             <span className="text-[10px] text-stone-400 font-medium">
               Property Platform

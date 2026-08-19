@@ -195,6 +195,9 @@ export const handler = async (event: any) => {
         "Content-Type": "text/html; charset=UTF-8",
         "Cache-Control": "public, max-age=0, must-revalidate",
         "X-Robots-Tag": "all",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
       },
       body: finalHtml,
     };

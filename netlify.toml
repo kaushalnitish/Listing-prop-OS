@@ -6,6 +6,30 @@
 [functions]
   included_files = ["dist/**", "data/**"]
 
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS, HEAD"
+    Access-Control-Allow-Headers = "*"
+    X-Robots-Tag = "all"
+
+[[headers]]
+  for = "/p/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, HEAD, OPTIONS"
+    Access-Control-Allow-Headers = "*"
+    X-Robots-Tag = "all"
+
+[[headers]]
+  for = "/preview-test"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, HEAD, OPTIONS"
+    Access-Control-Allow-Headers = "*"
+    X-Robots-Tag = "all"
+
 # Minimal Isolation Test Page for WhatsApp crawler diagnostic
 [[redirects]]
   from = "/preview-test"

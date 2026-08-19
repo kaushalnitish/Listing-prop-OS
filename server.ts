@@ -110,6 +110,15 @@ async function uploadVideoBufferToSupabase(
 
 async function startServer() {
   const app = express();
+  app.use((req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
+    res.setHeader("Access-Control-Allow-Headers", "*");
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(204);
+    }
+    next();
+  });
   app.use(express.json({ limit: "120mb" }));
   app.use(express.urlencoded({ limit: "120mb", extended: true }));
 

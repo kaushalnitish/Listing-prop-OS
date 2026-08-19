@@ -1,0 +1,17 @@
+/*
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD
+  Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Range
+  X-Robots-Tag: all
+
+/p/*
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, HEAD, OPTIONS
+  Access-Control-Allow-Headers: *
+  X-Robots-Tag: all
+
+/preview-test
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, HEAD, OPTIONS
+  Access-Control-Allow-Headers: *
+  X-Robots-Tag: all

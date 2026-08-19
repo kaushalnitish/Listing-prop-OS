@@ -1074,6 +1074,14 @@ function findMatchingListing(listings: any[], targetSlug: string): any | null {
     const fallbackMatch = findMatchingListing(defaultListings, normalized);
     if (fallbackMatch) return fallbackMatch;
 
+    if (
+      normalized === 'the-glasshouse-sanctuary-luxury-villa' ||
+      normalized === 'listing-glasshouse-sanctuary-alibaug' ||
+      normalized === 'glasshouse'
+    ) {
+      return defaultListings.find((l: any) => l.slug === 'the-glasshouse-sanctuary-luxury-villa') || FALLBACK_SAMPLE_LISTING;
+    }
+
     if (normalized === 'the-grand-luminary-villa' || normalized === 'sample-luxury-listing-1') {
       return FALLBACK_SAMPLE_LISTING;
     }

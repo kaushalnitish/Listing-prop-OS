@@ -3,6 +3,35 @@
   publish = "dist"
   functions = "netlify/functions"
 
+[functions]
+  included_files = ["dist/**", "data/**"]
+
+# Server-Side Rendered Dynamic HTML with Open Graph & Twitter Meta Tags
+[[redirects]]
+  from = "/p/*"
+  to = "/.netlify/functions/render-listing-page"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/listing/*"
+  to = "/.netlify/functions/render-listing-page"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/property/*"
+  to = "/.netlify/functions/render-listing-page"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/sample"
+  to = "/.netlify/functions/render-listing-page"
+  status = 200
+  force = true
+
+# API Functions
 [[redirects]]
   from = "/api/og-metadata"
   to = "/.netlify/functions/og"
@@ -23,6 +52,7 @@
   to = "/.netlify/functions/:splat"
   status = 200
 
+# Client SPA Fallback
 [[redirects]]
   from = "/*"
   to = "/index.html"

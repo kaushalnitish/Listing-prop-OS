@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { createClient } from "@supabase/supabase-js";
 import defaultListingsData from "../../data/listings.json";
 import {
@@ -40,8 +42,10 @@ function stripNoise(s: string) {
 }
 
 function findMatchingListing(listings: any[], targetSlug: string): any | null {
+  if (!targetSlug) return null;
   const normalized = targetSlug.toLowerCase().trim();
 
+  // 1. Direct match by slug, id, or previousSlugs
   let match = listings.find(
     (l: any) =>
       (l.slug && l.slug.toLowerCase() === normalized) ||
@@ -53,6 +57,7 @@ function findMatchingListing(listings: any[], targetSlug: string): any | null {
   );
   if (match) return match;
 
+  // 2. Fuzzy match stripping common slug noise
   const strippedTarget = stripNoise(normalized);
   if (strippedTarget) {
     match = listings.find(
@@ -66,6 +71,7 @@ function findMatchingListing(listings: any[], targetSlug: string): any | null {
     if (match) return match;
   }
 
+  // 3. Fallback to sample listings if requested
   if (
     normalized === "the-glasshouse-sanctuary-luxury-villa" ||
     normalized === "listing-glasshouse-sanctuary-alibaug" ||
@@ -86,16 +92,68 @@ function findMatchingListing(listings: any[], targetSlug: string): any | null {
   return null;
 }
 
+function getHtmlTemplate(): string {
+  const possiblePaths = [
+    path.join(process.cwd(), "dist", "index.html"),
+    path.join(__dirname, "..", "..", "dist", "index.html"),
+    path.join(__dirname, "dist", "index.html"),
+    path.join(process.cwd(), "index.html"),
+    path.join(__dirname, "..", "..", "index.html"),
+  ];
+
+  for (const p of possiblePaths) {
+    try {
+      if (fs.existsSync(p)) {
+        const content = fs.readFileSync(p, "utf-8");
+        if (content && content.includes("<div id=\"root\">")) {
+          return content;
+        }
+      }
+    } catch {
+      // ignore and try next path
+    }
+  }
+
+  // Fallback base HTML shell if dist/index.html is not directly reachable
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Listing OS - Property Listing Platform</title>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>`;
+}
+
 export const handler = async (event: any) => {
   try {
-    const slug = event.queryStringParameters?.slug || event.queryStringParameters?.id || "";
-    const rawHost = event.headers?.["host"] || event.headers?.["x-forwarded-host"] || "localhost";
+    const rawPath = event.path || "";
+    // Extract slug from /p/:slug, /listing/:slug, /property/:slug, /sample, or query parameter
+    let slug = event.queryStringParameters?.slug || event.queryStringParameters?.id || "";
+
+    if (!slug) {
+      const match = rawPath.match(/^\/(?:p|listing|property)\/([^/?#]+)/i);
+      if (match) {
+        slug = decodeURIComponent(match[1]);
+      } else if (rawPath.startsWith("/sample")) {
+        slug = "the-glasshouse-sanctuary-luxury-villa";
+      }
+    }
+
+    const rawHost =
+      event.headers?.["x-forwarded-host"] ||
+      event.headers?.["host"] ||
+      "listingos.netlify.app";
     const proto = event.headers?.["x-forwarded-proto"] || "https";
-    const baseUrl = `${proto}://${rawHost}`;
+    const baseUrl = `${proto}://${rawHost}`.replace(/\/$/, "");
 
     let listing: any = null;
 
     if (slug) {
+      // 1. Try Supabase
       if (supabase) {
         try {
           const { data, error } = await supabase
@@ -106,37 +164,47 @@ export const handler = async (event: any) => {
             listing = findMatchingListing(data, slug);
           }
         } catch (e) {
-          console.warn("Supabase lookup error in Netlify OG handler:", e);
+          console.warn("Supabase lookup error in Netlify SSR handler:", e);
         }
       }
 
+      // 2. Try defaultListings (data/listings.json)
       if (!listing) {
         listing = findMatchingListing(defaultListings, slug);
+      }
+
+      // 3. Try SAMPLE_LISTINGS
+      if (!listing) {
+        listing = findMatchingListing(SAMPLE_LISTINGS, slug);
       }
     }
 
     const metadata = generateListingOpenGraphMetadata(listing, baseUrl, slug);
+    const baseHtml = getHtmlTemplate();
+    const finalHtml = injectMetadataIntoHtml(baseHtml, metadata);
 
     return {
       statusCode: 200,
       headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
+        "Content-Type": "text/html; charset=UTF-8",
+        "Cache-Control": "public, max-age=0, must-revalidate",
+        "X-Robots-Tag": "all",
       },
-      body: JSON.stringify({
-        success: true,
-        slug,
-        foundListing: Boolean(listing),
-        metadata,
-      }),
+      body: finalHtml,
     };
   } catch (err: any) {
+    console.error("Error in Netlify SSR handler:", err);
+    // Even on error, return HTML so client SPA can still attempt to load
+    const baseHtml = getHtmlTemplate();
+    const metadata = DEFAULT_PLATFORM_META;
+    const finalHtml = injectMetadataIntoHtml(baseHtml, metadata);
+
     return {
-      statusCode: 500,
+      statusCode: 200,
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "text/html; charset=UTF-8",
       },
-      body: JSON.stringify({ success: false, error: err.message }),
+      body: finalHtml,
     };
   }
 };

@@ -35,6 +35,7 @@ function toDbRow(listing: any) {
     status: listing.status === 'draft' || listing.status === 'archived' ? listing.status : 'published',
     seo_title: listing.seoTitle || listing.seo_title || null,
     meta_description: listing.metaDescription || listing.meta_description || null,
+    walkthrough_video_url: listing.walkthrough_video_url || listing.walkthroughVideoUrl || null,
     previous_slugs: Array.isArray(listing.previousSlugs) ? listing.previousSlugs : (Array.isArray(listing.previous_slugs) ? listing.previous_slugs : []),
     created_at: listing.createdAt || listing.created_at || now,
     updated_at: listing.updatedAt || listing.updated_at || now,
@@ -43,6 +44,18 @@ function toDbRow(listing: any) {
 
 function fromDbRow(row: any): any {
   const now = new Date().toISOString();
+  const videoUrl = row.walkthrough_video_url || row.walkthroughVideoUrl || null;
+  const videoType =
+    row.walkthrough_video_type ||
+    row.walkthroughVideoType ||
+    (videoUrl
+      ? videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')
+        ? 'youtube'
+        : videoUrl.includes('vimeo.com')
+        ? 'vimeo'
+        : 'direct'
+      : null);
+  const videoThumb = row.walkthrough_video_thumbnail || row.walkthroughVideoThumbnail || null;
   return {
     id: String(row.id),
     slug: String(row.slug || ''),
@@ -60,6 +73,10 @@ function fromDbRow(row: any): any {
     status: row.status === 'draft' || row.status === 'archived' ? row.status : 'published',
     seoTitle: row.seo_title || row.seoTitle || undefined,
     metaDescription: row.meta_description || row.metaDescription || undefined,
+    walkthrough_video_url: row.walkthrough_video_url || row.walkthroughVideoUrl || null,
+    walkthrough_video_type: row.walkthrough_video_type || row.walkthroughVideoType || null,
+    walkthroughVideoUrl: row.walkthrough_video_url || row.walkthroughVideoUrl || null,
+    walkthroughVideoType: row.walkthrough_video_type || row.walkthroughVideoType || null,
     previousSlugs: Array.isArray(row.previous_slugs) ? row.previous_slugs : (Array.isArray(row.previousSlugs) ? row.previousSlugs : []),
     createdAt: row.created_at || row.createdAt || now,
     updatedAt: row.updated_at || row.updatedAt || now,

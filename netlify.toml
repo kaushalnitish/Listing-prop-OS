@@ -4,6 +4,11 @@
   functions = "netlify/functions"
 
 [[redirects]]
+  from = "/api/og-metadata"
+  to = "/.netlify/functions/og"
+  status = 200
+
+[[redirects]]
   from = "/api/listings"
   to = "/.netlify/functions/listings"
   status = 200

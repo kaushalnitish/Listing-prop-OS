@@ -6,6 +6,7 @@ import { parsePropertyDetailsWithAi } from '../../lib/aiParser';
 import { ImageUploader } from './ImageUploader';
 import { AmenitiesSelector } from './AmenitiesSelector';
 import { ListingPreviewModal } from './ListingPreviewModal';
+import { WalkthroughVideoUploader } from './WalkthroughVideoUploader';
 import {
   Building2,
   DollarSign,
@@ -126,8 +127,17 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
   const [seoTitle, setSeoTitle] = useState(initialData?.seoTitle || '');
   const [metaDescription, setMetaDescription] = useState(initialData?.metaDescription || '');
 
-  // Images
+  // Images & Walkthrough Video
   const [images, setImages] = useState(initialData?.images || []);
+  const [walkthroughVideoUrl, setWalkthroughVideoUrl] = useState<string | null>(
+    initialData?.walkthrough_video_url || (initialData as any)?.walkthroughVideoUrl || null
+  );
+  const [walkthroughVideoType, setWalkthroughVideoType] = useState<string | null>(
+    initialData?.walkthrough_video_type || (initialData as any)?.walkthroughVideoType || 'video/mp4'
+  );
+  const [walkthroughVideoThumbnail, setWalkthroughVideoThumbnail] = useState<string | null>(
+    initialData?.walkthrough_video_thumbnail || (initialData as any)?.walkthroughVideoThumbnail || null
+  );
 
   // Contact
   const [agentName, setAgentName] = useState(
@@ -266,6 +276,12 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
       highlights: highlights.filter((h) => h.trim() !== ''),
       amenities: amenities.length > 0 ? amenities : ['Gated Society', '45ft RCC Roads', '5 Years Warranty'],
       images,
+      walkthrough_video_url: walkthroughVideoUrl || null,
+      walkthrough_video_type: walkthroughVideoType || null,
+      walkthrough_video_thumbnail: walkthroughVideoThumbnail || null,
+      walkthroughVideoUrl: walkthroughVideoUrl || null,
+      walkthroughVideoType: walkthroughVideoType || null,
+      walkthroughVideoThumbnail: walkthroughVideoThumbnail || null,
       contact: {
         agentName: agentName.trim(),
         agentRole: agentRole.trim(),
@@ -464,6 +480,20 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
             onChange={(newImages) => setImages(newImages)}
             maxImages={20}
           />
+
+          <div className="pt-6 border-t border-zinc-800/80">
+            <WalkthroughVideoUploader
+              videoUrl={walkthroughVideoUrl}
+              videoType={walkthroughVideoType}
+              thumbnailUrl={walkthroughVideoThumbnail}
+              listingId={initialData?.id}
+              onChange={(url, type, thumb) => {
+                setWalkthroughVideoUrl(url);
+                setWalkthroughVideoType(type || 'video/mp4');
+                setWalkthroughVideoThumbnail(thumb || null);
+              }}
+            />
+          </div>
 
           <div className="pt-4 border-t border-zinc-800/80 flex items-center justify-between">
             <p className="text-xs text-zinc-500">

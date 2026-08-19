@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { PublicLayout } from '../../components/layout/PublicLayout';
 import { getListingBySlug, getListingById } from '../../lib/storage';
+import {
+  generateListingOpenGraphMetadata,
+  buildListingTitle,
+  buildListingDescription,
+  extractCoverImageUrl,
+} from '../../lib/seo';
 import { PropertyListing } from '../../types';
 
 import { HeroGallery } from '../../components/public/HeroGallery';
@@ -9,6 +15,7 @@ import { PropertySpecs } from '../../components/public/PropertySpecs';
 import { PropertyHighlightsBand } from '../../components/public/PropertyHighlightsBand';
 import { PropertyExperience } from '../../components/public/PropertyExperience';
 import { PropertyStory } from '../../components/public/PropertyStory';
+import { WalkthroughVideoSection } from '../../components/public/WalkthroughVideoSection';
 import { GalleryGrid } from '../../components/public/GalleryGrid';
 import { LocationMap } from '../../components/public/LocationMap';
 import { StickyActionBar } from '../../components/public/StickyActionBar';
@@ -25,13 +32,13 @@ export const PublicListingPage: React.FC = () => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  // Dynamic SEO & OpenGraph metadata injection
+  // Dynamic SEO & OpenGraph metadata injection on client
   useEffect(() => {
     if (!listing) return;
 
-    const pageTitle = listing.seoTitle || `${listing.title} | ${listing.location?.city || 'Property'} Real Estate`;
-    const metaDesc = listing.metaDescription || listing.tagline || listing.description?.slice(0, 155) || '';
-    const coverImage = listing.images?.find((img) => img.isCover)?.url || listing.images?.[0]?.url || '';
+    const pageTitle = buildListingTitle(listing);
+    const metaDesc = buildListingDescription(listing);
+    const coverImage = extractCoverImageUrl(listing, window.location.origin);
 
     document.title = pageTitle;
 
@@ -57,7 +64,7 @@ export const PublicListingPage: React.FC = () => {
     if (coverImage) setMetaTag('meta[name="twitter:image"]', 'name', 'twitter:image', coverImage);
 
     return () => {
-      document.title = 'Property Showcase | Real Estate';
+      document.title = 'Listing OS — Real Estate Showcase';
     };
   }, [listing]);
 
@@ -170,17 +177,25 @@ export const PublicListingPage: React.FC = () => {
             amenities={listing.amenities}
           />
 
-          {/* 7. Photo Gallery Grid */}
+          {/* 7. Property Walkthrough Video (Rendered only if video exists) */}
+          <WalkthroughVideoSection
+            videoUrl={listing.walkthrough_video_url || (listing as any).walkthroughVideoUrl}
+            videoType={listing.walkthrough_video_type || (listing as any).walkthroughVideoType}
+            thumbnailUrl={listing.walkthrough_video_thumbnail || (listing as any).walkthroughVideoThumbnail}
+            title={listing.title}
+          />
+
+          {/* 8. Photo Gallery Grid */}
           <GalleryGrid
             images={listing.images || []}
             onOpenLightbox={handleOpenLightbox}
           />
 
-          {/* 8. Location & Google Maps */}
+          {/* 9. Location & Google Maps */}
           <LocationMap location={listing.location} />
         </div>
 
-        {/* 9. Sticky Action Bar */}
+        {/* 10. Sticky Action Bar */}
         <StickyActionBar
           contact={contactInfo}
           propertyTitle={listing.title}

@@ -19,10 +19,19 @@ CREATE TABLE IF NOT EXISTS public.listings (
   status TEXT DEFAULT 'published',
   seo_title TEXT,
   meta_description TEXT,
+  walkthrough_video_url TEXT,
+  walkthrough_video_type TEXT,
+  walkthrough_video_thumbnail TEXT,
   previous_slugs JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Migration for existing databases:
+ALTER TABLE public.listings
+ADD COLUMN IF NOT EXISTS walkthrough_video_url TEXT NULL,
+ADD COLUMN IF NOT EXISTS walkthrough_video_type TEXT NULL,
+ADD COLUMN IF NOT EXISTS walkthrough_video_thumbnail TEXT NULL;
 
 -- Indexes for high-performance lookups
 CREATE INDEX IF NOT EXISTS idx_listings_slug ON public.listings(slug);
@@ -61,23 +70,29 @@ ON public.listings
 FOR DELETE
 USING (true);
 
--- 3. Storage Bucket for Property Images
+-- 3. Storage Bucket for Property Images & Walkthrough Videos
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('property-images', 'property-images', true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('property-walkthroughs', 'property-walkthroughs', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Storage RLS Policies
 DROP POLICY IF EXISTS "Public Read Storage" ON storage.objects;
 DROP POLICY IF EXISTS "Admin Upload Storage" ON storage.objects;
 DROP POLICY IF EXISTS "Public Storage Upload" ON storage.objects;
+DROP POLICY IF EXISTS "Public Read Video Storage" ON storage.objects;
+DROP POLICY IF EXISTS "Public Video Storage Upload" ON storage.objects;
 
 CREATE POLICY "Public Read Storage"
 ON storage.objects FOR SELECT
-USING (bucket_id = 'property-images');
+USING (bucket_id = 'property-images' OR bucket_id = 'property-walkthroughs');
 
 CREATE POLICY "Public Storage Upload"
 ON storage.objects FOR INSERT
-WITH CHECK (bucket_id = 'property-images');
+WITH CHECK (bucket_id = 'property-images' OR bucket_id = 'property-walkthroughs');
 
 -- 4. Seed Initial Listing (listing-1786193079827)
 INSERT INTO public.listings (

@@ -4,6 +4,12 @@ import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import { createClient } from "@supabase/supabase-js";
+import {
+  generateListingOpenGraphMetadata,
+  injectMetadataIntoHtml,
+  DEFAULT_PLATFORM_META,
+  formatPriceForSocial,
+} from "./src/lib/seo";
 
 // Initialize Supabase Client on Server
 const rawSupabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
@@ -57,10 +63,55 @@ async function uploadBufferToSupabase(buffer: Buffer, fileName: string, mimeType
   return null;
 }
 
+async function uploadVideoBufferToSupabase(
+  buffer: Buffer,
+  fileName: string,
+  mimeType: string = "video/mp4",
+  listingId?: string
+): Promise<string | null> {
+  if (!supabaseServer) return null;
+  try {
+    const folder = listingId ? `walkthroughs/${listingId}` : "walkthroughs";
+    const filePath = `${folder}/${fileName}`;
+    const { error: uploadErr } = await supabaseServer.storage
+      .from("property-walkthroughs")
+      .upload(filePath, buffer, {
+        contentType: mimeType,
+        upsert: true,
+      });
+
+    if (uploadErr) {
+      console.warn("Supabase Walkthrough Storage upload warning on server:", uploadErr.message);
+      if (uploadErr.message?.includes("not found") || uploadErr.message?.includes("Bucket")) {
+        try {
+          await supabaseServer.storage.createBucket("property-walkthroughs", { public: true });
+          const { error: retryErr } = await supabaseServer.storage
+            .from("property-walkthroughs")
+            .upload(filePath, buffer, { contentType: mimeType, upsert: true });
+          if (retryErr) console.warn("Supabase retry video upload error:", retryErr.message);
+        } catch (bErr) {
+          console.warn("Bucket creation error:", bErr);
+        }
+      }
+    }
+
+    const { data } = supabaseServer.storage
+      .from("property-walkthroughs")
+      .getPublicUrl(filePath);
+
+    if (data?.publicUrl) {
+      return data.publicUrl;
+    }
+  } catch (err) {
+    console.error("Error uploading video buffer to Supabase Storage:", err);
+  }
+  return null;
+}
+
 async function startServer() {
   const app = express();
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  app.use(express.json({ limit: "120mb" }));
+  app.use(express.urlencoded({ limit: "120mb", extended: true }));
 
   const PORT = 3000;
 
@@ -387,6 +438,93 @@ INSTRUCTIONS & CONVERSIONS:
     }
   });
 
+  // Walkthrough Video Upload API Route
+  app.post("/api/upload-video", async (req, res) => {
+    try {
+      const { video, name, mimeType = "video/mp4", listingId } = req.body;
+      if (!video) {
+        return res.status(400).json({ success: false, error: "No video data provided" });
+      }
+
+      let buffer: Buffer;
+      let resolvedMime = mimeType;
+      let ext = "mp4";
+
+      if (video.startsWith("data:")) {
+        const matches = video.match(/^data:(video\/[a-zA-Z0-9.\-_+]+);base64,(.+)$/);
+        if (matches) {
+          resolvedMime = matches[1];
+          const subType = resolvedMime.split("/")[1] || "mp4";
+          ext = subType === "quicktime" ? "mov" : subType;
+          buffer = Buffer.from(matches[2], "base64");
+        } else {
+          const parts = video.split(",");
+          buffer = Buffer.from(parts[1] || parts[0], "base64");
+        }
+      } else {
+        buffer = Buffer.from(video, "base64");
+      }
+
+      // Size limit verification: 100 MB max
+      const MAX_SIZE_BYTES = 100 * 1024 * 1024;
+      if (buffer.length > MAX_SIZE_BYTES) {
+        return res.status(400).json({
+          success: false,
+          error: "Video file size exceeds maximum limit of 100MB.",
+        });
+      }
+
+      if (name && name.includes(".")) {
+        const parsedExt = name.split(".").pop()?.toLowerCase();
+        if (parsedExt) ext = parsedExt;
+      }
+
+      const fileName = `walkthrough-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
+
+      // Upload to Supabase Storage property-walkthroughs bucket
+      const supabaseUrl = await uploadVideoBufferToSupabase(buffer, fileName, resolvedMime, listingId);
+      if (supabaseUrl) {
+        return res.json({
+          success: true,
+          url: supabaseUrl,
+          type: resolvedMime,
+          fileName,
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        error: "Supabase Storage upload failed for walkthrough video. Please ensure Supabase credentials and property-walkthroughs bucket are configured.",
+      });
+    } catch (err: any) {
+      console.error("Error in /api/upload-video:", err);
+      return res.status(500).json({ success: false, error: err?.message || "Failed to upload video" });
+    }
+  });
+
+  // Walkthrough Video Delete API Route
+  app.post("/api/delete-video", async (req, res) => {
+    try {
+      const { url } = req.body;
+      if (!url || !supabaseServer) {
+        return res.json({ success: true, message: "No action required" });
+      }
+
+      // Extract file path from Supabase public URL
+      const bucketIdentifier = "/property-walkthroughs/";
+      if (url.includes(bucketIdentifier)) {
+        const filePath = url.split(bucketIdentifier)[1];
+        if (filePath) {
+          await supabaseServer.storage.from("property-walkthroughs").remove([filePath]);
+        }
+      }
+      return res.json({ success: true });
+    } catch (err: any) {
+      console.warn("Warning deleting video from Supabase:", err);
+      return res.json({ success: false, error: err?.message });
+    }
+  });
+
 function toDbRow(listing: any) {
   const now = new Date().toISOString();
   return {
@@ -406,6 +544,7 @@ function toDbRow(listing: any) {
     status: listing.status === 'draft' || listing.status === 'archived' ? listing.status : 'published',
     seo_title: listing.seoTitle || listing.seo_title || null,
     meta_description: listing.metaDescription || listing.meta_description || null,
+    walkthrough_video_url: listing.walkthrough_video_url || listing.walkthroughVideoUrl || null,
     previous_slugs: Array.isArray(listing.previousSlugs) ? listing.previousSlugs : (Array.isArray(listing.previous_slugs) ? listing.previous_slugs : []),
     created_at: listing.createdAt || listing.created_at || now,
     updated_at: listing.updatedAt || listing.updated_at || now,
@@ -414,6 +553,19 @@ function toDbRow(listing: any) {
 
 function fromDbRow(row: any): any {
   const now = new Date().toISOString();
+  const videoUrl = row.walkthrough_video_url || row.walkthroughVideoUrl || null;
+  const videoType =
+    row.walkthrough_video_type ||
+    row.walkthroughVideoType ||
+    (videoUrl
+      ? videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')
+        ? 'youtube'
+        : videoUrl.includes('vimeo.com')
+        ? 'vimeo'
+        : 'direct'
+      : null);
+  const videoThumb = row.walkthrough_video_thumbnail || row.walkthroughVideoThumbnail || null;
+
   return {
     id: String(row.id),
     slug: String(row.slug || ''),
@@ -431,6 +583,12 @@ function fromDbRow(row: any): any {
     status: row.status === 'draft' || row.status === 'archived' ? row.status : 'published',
     seoTitle: row.seo_title || row.seoTitle || undefined,
     metaDescription: row.meta_description || row.metaDescription || undefined,
+    walkthrough_video_url: videoUrl,
+    walkthrough_video_type: videoType,
+    walkthrough_video_thumbnail: videoThumb,
+    walkthroughVideoUrl: videoUrl,
+    walkthroughVideoType: videoType,
+    walkthroughVideoThumbnail: videoThumb,
     previousSlugs: Array.isArray(row.previous_slugs) ? row.previous_slugs : (Array.isArray(row.previousSlugs) ? row.previousSlugs : []),
     createdAt: row.created_at || row.createdAt || now,
     updatedAt: row.updated_at || row.updatedAt || now,
@@ -763,11 +921,25 @@ function findMatchingListing(listings: any[], targetSlug: string): any | null {
         }
       }
 
-      const dbRow = toDbRow(listing);
-      const { data, error } = await supabaseServer
+      let dbRow = toDbRow(listing);
+      let { data, error } = await supabaseServer
         .from("listings")
         .upsert([dbRow])
         .select();
+
+      if (error && error.message && (error.message.includes("walkthrough_video") || error.code === "PGRST204")) {
+        console.warn("Supabase schema cache missing video columns, retrying with core fields:", error.message);
+        const safeDbRow = { ...dbRow };
+        delete (safeDbRow as any).walkthrough_video_url;
+        delete (safeDbRow as any).walkthrough_video_type;
+        delete (safeDbRow as any).walkthrough_video_thumbnail;
+        const retryResult = await supabaseServer
+          .from("listings")
+          .upsert([safeDbRow])
+          .select();
+        data = retryResult.data;
+        error = retryResult.error;
+      }
 
       if (error) {
         console.error("Supabase upsert error in POST /api/listings:", error);
@@ -846,29 +1018,182 @@ function findMatchingListing(listings: any[], targetSlug: string): any | null {
     }
   });
 
-  // Global Error Handler Middleware (Sanitizes unhandled internal exceptions)
-  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error("Unhandled Global Server Error:", err);
-    res.status(500).json({
-      success: false,
-      error: "Internal Server Error. Request could not be processed.",
-    });
+  // Safe helper to load default fallback listings
+  let defaultListings: any[] = [];
+  try {
+    const listingsJsonPath = path.join(process.cwd(), "data", "listings.json");
+    if (fs.existsSync(listingsJsonPath)) {
+      const raw = fs.readFileSync(listingsJsonPath, "utf-8");
+      defaultListings = JSON.parse(raw);
+    }
+  } catch (e) {
+    defaultListings = [FALLBACK_SAMPLE_LISTING];
+  }
+
+  // Helper to determine accurate public base URL
+  function getRequestBaseUrl(req: express.Request): string {
+    if (process.env.APP_URL && process.env.APP_URL.startsWith('http')) {
+      return process.env.APP_URL.replace(/\/$/, '');
+    }
+    const proto = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
+    const host = (req.headers['x-forwarded-host'] as string) || req.get('host') || 'localhost:3000';
+    return `${proto}://${host}`.replace(/\/$/, '');
+  }
+
+  // Server-side helper to find listing by slug/ID from Supabase, JSON, or sample
+  async function getListingForRoute(slugOrId: string): Promise<any | null> {
+    if (!slugOrId) return null;
+    const normalized = slugOrId.toLowerCase().trim();
+
+    if (
+      normalized === 'sample' ||
+      normalized === 'sample-preview' ||
+      normalized === 'sample-listing' ||
+      normalized === 'sample-property'
+    ) {
+      return FALLBACK_SAMPLE_LISTING;
+    }
+
+    if (supabaseServer) {
+      try {
+        const { data, error } = await supabaseServer
+          .from("listings")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (!error && Array.isArray(data) && data.length > 0) {
+          const listings = data.map(fromDbRow);
+          const match = findMatchingListing(listings, normalized);
+          if (match) return match;
+        }
+      } catch (err) {
+        console.warn("Supabase lookup warning during OpenGraph metadata generation:", err);
+      }
+    }
+
+    const fallbackMatch = findMatchingListing(defaultListings, normalized);
+    if (fallbackMatch) return fallbackMatch;
+
+    if (normalized === 'the-grand-luminary-villa' || normalized === 'sample-luxury-listing-1') {
+      return FALLBACK_SAMPLE_LISTING;
+    }
+
+    return null;
+  }
+
+  // Inspection / Debugging API endpoint for Open Graph metadata
+  app.get("/api/og-metadata", async (req, res) => {
+    try {
+      const slug = (req.query.slug as string) || (req.query.id as string) || '';
+      const listing = slug ? await getListingForRoute(slug) : null;
+      const baseUrl = getRequestBaseUrl(req);
+      const metadata = generateListingOpenGraphMetadata(listing, baseUrl, slug);
+      return res.json({
+        success: true,
+        slug,
+        foundListing: Boolean(listing),
+        metadata,
+      });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
   });
 
-  // Vite middleware for dev or static server for production
+  // Global Error Handler Middleware for API routes (Sanitizes unhandled internal exceptions)
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (req.path.startsWith("/api/")) {
+      console.error("Unhandled Global Server Error:", err);
+      return res.status(500).json({
+        success: false,
+        error: "Internal Server Error. Request could not be processed.",
+      });
+    }
+    next(err);
+  });
+
+  // Setup Vite in development mode
+  let vite: any = null;
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
+    vite = await createViteServer({
       server: { middlewareMode: true },
-      appType: "spa",
+      appType: "custom",
     });
+  }
+
+  // Dynamic Open Graph HTML Handler for Public Listing Pages
+  const publicListingRoutes = [
+    "/p/:slug",
+    "/property/:slug",
+    "/listing/:slug",
+    "/sample",
+    "/preview",
+  ];
+
+  app.get(publicListingRoutes, async (req, res, next) => {
+    try {
+      const slug = req.params.slug || (req.path.includes('sample') ? 'sample' : 'the-grand-luminary-villa');
+      const listing = await getListingForRoute(slug);
+      const baseUrl = getRequestBaseUrl(req);
+      const metadata = generateListingOpenGraphMetadata(listing, baseUrl, slug);
+
+      let template: string;
+      if (process.env.NODE_ENV !== "production" && vite) {
+        const rawTemplate = fs.readFileSync(path.join(process.cwd(), "index.html"), "utf-8");
+        template = await vite.transformIndexHtml(req.originalUrl, rawTemplate);
+      } else {
+        const distIndex = path.join(process.cwd(), "dist", "index.html");
+        template = fs.readFileSync(distIndex, "utf-8");
+      }
+
+      const injectedHtml = injectMetadataIntoHtml(template, metadata);
+      return res.status(200).set({ "Content-Type": "text/html; charset=utf-8" }).send(injectedHtml);
+    } catch (err) {
+      console.error("Error generating listing OpenGraph HTML:", err);
+      next(err);
+    }
+  });
+
+  // Vite middleware for dev or static server for production assets
+  if (process.env.NODE_ENV !== "production" && vite) {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
   }
+
+  // Catch-all HTML Handler for all other routes (Home, Access, Dashboard, Admin, etc.)
+  app.get("*", async (req, res, next) => {
+    if (req.path.startsWith("/api/") || req.path.includes(".")) {
+      return next();
+    }
+
+    try {
+      const baseUrl = getRequestBaseUrl(req);
+      const metadata = {
+        ...DEFAULT_PLATFORM_META,
+        url: `${baseUrl}${req.path}`,
+      };
+
+      let template: string;
+      if (process.env.NODE_ENV !== "production" && vite) {
+        const rawTemplate = fs.readFileSync(path.join(process.cwd(), "index.html"), "utf-8");
+        template = await vite.transformIndexHtml(req.originalUrl, rawTemplate);
+      } else {
+        const distIndex = path.join(process.cwd(), "dist", "index.html");
+        template = fs.readFileSync(distIndex, "utf-8");
+      }
+
+      const injectedHtml = injectMetadataIntoHtml(template, metadata);
+      return res.status(200).set({ "Content-Type": "text/html; charset=utf-8" }).send(injectedHtml);
+    } catch (err) {
+      console.error("Error serving fallback HTML:", err);
+      if (process.env.NODE_ENV !== "production") {
+        return res.sendFile(path.join(process.cwd(), "index.html"));
+      } else {
+        return res.sendFile(path.join(process.cwd(), "dist", "index.html"));
+      }
+    }
+  });
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);

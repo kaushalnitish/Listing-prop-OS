@@ -1,9 +1,13 @@
 import { PropertyListing } from '../types';
 import { supabase, isSupabaseConfigured } from './supabase';
 import defaultListingsData from '../../data/listings.json';
-import { SAMPLE_PROPERTY_LISTING } from '../data/sampleListing';
+import {
+  SAMPLE_PROPERTY_LISTING,
+  GLASSHOUSE_SANCTUARY_LISTING,
+  SAMPLE_LISTINGS,
+} from '../data/sampleListing';
 
-export { SAMPLE_PROPERTY_LISTING };
+export { SAMPLE_PROPERTY_LISTING, GLASSHOUSE_SANCTUARY_LISTING, SAMPLE_LISTINGS };
 
 const defaultListings: PropertyListing[] = Array.isArray(defaultListingsData)
   ? (defaultListingsData as PropertyListing[])
@@ -11,8 +15,8 @@ const defaultListings: PropertyListing[] = Array.isArray(defaultListingsData)
 
 const LOCAL_STORAGE_KEY = 'internal_property_listings';
 
-// Sample listing fallback for preview purposes
-export const sampleListings: PropertyListing[] = [SAMPLE_PROPERTY_LISTING];
+// Sample listings fallback for preview and demo purposes
+export const sampleListings: PropertyListing[] = SAMPLE_LISTINGS;
 
 export async function ensureUniqueSlug(rawSlug: string, currentId?: string): Promise<string> {
   const listings = await getListings();
@@ -53,6 +57,8 @@ function toDbRow(listing: PropertyListing) {
     status: listing.status || 'published',
     seo_title: listing.seoTitle || null,
     meta_description: listing.metaDescription || null,
+    walkthrough_video_url: listing.walkthrough_video_url || listing.walkthroughVideoUrl || null,
+    walkthrough_video_type: listing.walkthrough_video_type || listing.walkthroughVideoType || null,
     created_at: listing.createdAt || now,
     updated_at: listing.updatedAt || now,
   };
@@ -60,6 +66,19 @@ function toDbRow(listing: PropertyListing) {
 
 function fromDbRow(row: any): PropertyListing {
   const now = new Date().toISOString();
+  const videoUrl = row.walkthrough_video_url || row.walkthroughVideoUrl || null;
+  const videoType =
+    row.walkthrough_video_type ||
+    row.walkthroughVideoType ||
+    (videoUrl
+      ? videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')
+        ? 'youtube'
+        : videoUrl.includes('vimeo.com')
+        ? 'vimeo'
+        : 'direct'
+      : null);
+  const videoThumb = row.walkthrough_video_thumbnail || row.walkthroughVideoThumbnail || null;
+
   return {
     id: String(row.id),
     slug: String(row.slug || ''),
@@ -77,6 +96,12 @@ function fromDbRow(row: any): PropertyListing {
     status: row.status === 'draft' || row.status === 'archived' ? row.status : 'published',
     seoTitle: row.seoTitle || row.seo_title || undefined,
     metaDescription: row.metaDescription || row.meta_description || undefined,
+    walkthrough_video_url: videoUrl,
+    walkthrough_video_type: videoType,
+    walkthrough_video_thumbnail: videoThumb,
+    walkthroughVideoUrl: videoUrl,
+    walkthroughVideoType: videoType,
+    walkthroughVideoThumbnail: videoThumb,
     createdAt: row.createdAt || row.created_at || now,
     updatedAt: row.updatedAt || row.updated_at || now,
   };
@@ -422,6 +447,143 @@ export async function uploadImageToSupabaseStorage(file: File): Promise<string> 
       : `Supabase credentials (VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY) are missing in build environment, and server upload backup failed (${err.message || err}).`;
     console.error('Image upload failed:', detail);
     throw new Error(detail);
+  }
+}
+
+export async function uploadWalkthroughVideoToSupabaseStorage(
+  file: File,
+  listingId?: string
+): Promise<{ url: string; type: string }> {
+  // Validate format
+  const validMimes = ['video/mp4', 'video/webm', 'video/quicktime'];
+  const validExtensions = ['.mp4', '.webm', '.mov'];
+  const fileExt = (file.name.split('.').pop() || 'mp4').toLowerCase();
+
+  const isValidType =
+    validMimes.includes(file.type) ||
+    validExtensions.some((ext) => file.name.toLowerCase().endsWith(ext));
+
+  if (!isValidType) {
+    throw new Error('Unsupported video format. Please upload an MP4, WebM, or MOV video.');
+  }
+
+  // Validate file size (100 MB max)
+  const MAX_SIZE_BYTES = 100 * 1024 * 1024;
+  if (file.size > MAX_SIZE_BYTES) {
+    throw new Error(`Video file size (${(file.size / (1024 * 1024)).toFixed(1)} MB) exceeds the 100 MB limit.`);
+  }
+
+  const mimeType = file.type || (fileExt === 'mov' ? 'video/quicktime' : fileExt === 'webm' ? 'video/webm' : 'video/mp4');
+  const fileName = `walkthrough-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+  const folder = listingId ? `walkthroughs/${listingId}` : 'walkthroughs';
+  const filePath = `${folder}/${fileName}`;
+
+  let clientErrorMsg = '';
+
+  // 1. Direct Client-side Supabase Storage upload
+  if (isSupabaseConfigured) {
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('property-walkthroughs')
+        .upload(filePath, file, {
+          upsert: true,
+          contentType: mimeType,
+        });
+
+      if (!uploadError) {
+        const { data } = supabase.storage
+          .from('property-walkthroughs')
+          .getPublicUrl(filePath);
+
+        if (data?.publicUrl) {
+          return { url: data.publicUrl, type: mimeType };
+        }
+      } else {
+        clientErrorMsg = uploadError.message || JSON.stringify(uploadError);
+        console.warn('Supabase client video upload failed:', clientErrorMsg);
+      }
+    } catch (err: any) {
+      clientErrorMsg = err?.message || String(err);
+      console.warn('Supabase Storage video client upload exception:', err);
+    }
+  }
+
+  // 2. Delegate to server endpoint /api/upload-video
+  try {
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    const res = await fetch('/api/upload-video', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        video: base64,
+        name: file.name,
+        mimeType,
+        listingId,
+      }),
+    });
+
+    if (!res.ok) {
+      const contentType = res.headers.get('content-type') || '';
+      let serverErr = `HTTP ${res.status} ${res.statusText}`;
+      if (contentType.includes('application/json')) {
+        const errJson = await res.json().catch(() => ({}));
+        if (errJson.error) serverErr = errJson.error;
+      }
+      throw new Error(`Server API unavailable or returned error (${serverErr})`);
+    }
+
+    const json = await res.json();
+    if (json.success && json.url && (json.url.startsWith('https://') || json.url.startsWith('http://'))) {
+      return { url: json.url, type: json.type || mimeType };
+    }
+    throw new Error(json.error || 'Server upload failed to return a permanent public video URL');
+  } catch (err: any) {
+    const detail = clientErrorMsg
+      ? `Supabase Client: "${clientErrorMsg}". Server Backup: "${err.message || err}"`
+      : isSupabaseConfigured
+      ? `Upload failed: ${err.message || err}`
+      : `Supabase credentials missing or video upload failed (${err.message || err}).`;
+    console.error('Video upload failed:', detail);
+    throw new Error(detail);
+  }
+}
+
+export async function deleteWalkthroughVideoFromStorage(url: string): Promise<boolean> {
+  if (!url) return true;
+
+  // 1. Client-side removal if configured
+  if (isSupabaseConfigured) {
+    try {
+      const bucketIdentifier = '/property-walkthroughs/';
+      if (url.includes(bucketIdentifier)) {
+        const filePath = url.split(bucketIdentifier)[1];
+        if (filePath) {
+          await supabase.storage.from('property-walkthroughs').remove([filePath]);
+          return true;
+        }
+      }
+    } catch (e) {
+      console.warn('Client-side video deletion error:', e);
+    }
+  }
+
+  // 2. Server-side deletion endpoint
+  try {
+    await fetch('/api/delete-video', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    });
+    return true;
+  } catch (e) {
+    console.warn('Server-side video deletion error:', e);
+    return false;
   }
 }
 

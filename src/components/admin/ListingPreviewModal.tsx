@@ -6,6 +6,7 @@ import { PropertySpecs } from '../public/PropertySpecs';
 import { PropertyHighlightsBand } from '../public/PropertyHighlightsBand';
 import { PropertyExperience } from '../public/PropertyExperience';
 import { PropertyStory } from '../public/PropertyStory';
+import { WalkthroughVideoSection } from '../public/WalkthroughVideoSection';
 import { GalleryGrid } from '../public/GalleryGrid';
 import { LocationMap } from '../public/LocationMap';
 import { StickyActionBar } from '../public/StickyActionBar';
@@ -160,6 +161,14 @@ export const ListingPreviewModal: React.FC<ListingPreviewModalProps> = ({
             description={listing.description}
             highlights={listing.highlights}
             amenities={listing.amenities}
+          />
+
+          {/* Walkthrough Video (Rendered only if video exists) */}
+          <WalkthroughVideoSection
+            videoUrl={listing.walkthrough_video_url || (listing as any).walkthroughVideoUrl}
+            videoType={listing.walkthrough_video_type || (listing as any).walkthroughVideoType}
+            thumbnailUrl={listing.walkthrough_video_thumbnail || (listing as any).walkthroughVideoThumbnail}
+            title={listing.title}
           />
 
           <GalleryGrid

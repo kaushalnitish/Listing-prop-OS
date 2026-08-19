@@ -7,6 +7,7 @@ import {
   buildListingTitle,
   buildListingDescription,
   extractCoverImageUrl,
+  buildCanonicalListingUrl,
 } from '../../lib/seo';
 import { PropertyListing } from '../../types';
 
@@ -36,11 +37,24 @@ export const PublicListingPage: React.FC = () => {
   useEffect(() => {
     if (!listing) return;
 
+    const cleanCanonicalUrl = buildCanonicalListingUrl(
+      window.location.origin,
+      listing.slug || slug || listing.id
+    );
     const pageTitle = buildListingTitle(listing);
     const metaDesc = buildListingDescription(listing);
     const coverImage = extractCoverImageUrl(listing, window.location.origin);
 
     document.title = pageTitle;
+
+    // Clean tracking queries from URL bar if present
+    if (window.location.search && (window.location.search.includes('utm_') || window.location.search.includes('v='))) {
+      try {
+        window.history.replaceState(null, '', window.location.pathname);
+      } catch {
+        // Safe fallback
+      }
+    }
 
     const setMetaTag = (selector: string, attrName: string, attrVal: string, contentVal: string) => {
       let element = document.querySelector(selector);
@@ -52,6 +66,17 @@ export const PublicListingPage: React.FC = () => {
       element.setAttribute('content', contentVal);
     };
 
+    const setLinkTag = (selector: string, rel: string, hrefVal: string) => {
+      let element = document.querySelector(selector);
+      if (!element) {
+        element = document.createElement('link');
+        element.setAttribute('rel', rel);
+        document.head.appendChild(element);
+      }
+      element.setAttribute('href', hrefVal);
+    };
+
+    setLinkTag('link[rel="canonical"]', 'canonical', cleanCanonicalUrl);
     setMetaTag('meta[name="description"]', 'name', 'description', metaDesc);
     setMetaTag('meta[property="og:site_name"]', 'property', 'og:site_name', 'Listing OS');
     setMetaTag('meta[property="og:title"]', 'property', 'og:title', pageTitle);
@@ -63,8 +88,9 @@ export const PublicListingPage: React.FC = () => {
       setMetaTag('meta[property="og:image:height"]', 'property', 'og:image:height', '800');
     }
     setMetaTag('meta[property="og:type"]', 'property', 'og:type', 'website');
-    setMetaTag('meta[property="og:url"]', 'property', 'og:url', window.location.href);
+    setMetaTag('meta[property="og:url"]', 'property', 'og:url', cleanCanonicalUrl);
     setMetaTag('meta[name="twitter:card"]', 'name', 'twitter:card', 'summary');
+    setMetaTag('meta[name="twitter:url"]', 'name', 'twitter:url', cleanCanonicalUrl);
     setMetaTag('meta[name="twitter:title"]', 'name', 'twitter:title', pageTitle);
     setMetaTag('meta[name="twitter:description"]', 'name', 'twitter:description', metaDesc);
     if (coverImage) setMetaTag('meta[name="twitter:image"]', 'name', 'twitter:image', coverImage);
@@ -72,7 +98,7 @@ export const PublicListingPage: React.FC = () => {
     return () => {
       document.title = 'Listing OS — Real Estate Showcase';
     };
-  }, [listing]);
+  }, [listing, slug]);
 
   useEffect(() => {
     let isMounted = true;

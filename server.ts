@@ -1128,6 +1128,29 @@ function findMatchingListing(listings: any[], targetSlug: string): any | null {
     });
   }
 
+  // Minimal Isolation Test Route for WhatsApp crawler diagnostics
+  app.get("/preview-test", (req, res) => {
+    const testHtmlPath = path.join(process.cwd(), "public", "preview-test.html");
+    if (fs.existsSync(testHtmlPath)) {
+      return res.status(200).set({ "Content-Type": "text/html; charset=utf-8" }).sendFile(testHtmlPath);
+    }
+    return res.status(200).set({ "Content-Type": "text/html; charset=utf-8" }).send(`<!doctype html>
+<html>
+<head>
+<meta property="og:type" content="website">
+<meta property="og:title" content="Listing OS Preview Test">
+<meta property="og:description" content="This is a Listing OS WhatsApp preview test.">
+<meta property="og:image" content="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Tour_Eiffel_Wikimedia_Commons.jpg/800px-Tour_Eiffel_Wikimedia_Commons.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://listingos.netlify.app/preview-test">
+</head>
+<body>
+Listing OS Preview Test
+</body>
+</html>`);
+  });
+
   // Dynamic Open Graph HTML Handler for Public Listing Pages
   const publicListingRoutes = [
     "/p/:slug",

@@ -6,6 +6,13 @@
 [functions]
   included_files = ["dist/**", "data/**"]
 
+# Minimal Isolation Test Page for WhatsApp crawler diagnostic
+[[redirects]]
+  from = "/preview-test"
+  to = "/preview-test.html"
+  status = 200
+  force = true
+
 # Server-Side Rendered Dynamic HTML with Open Graph & Twitter Meta Tags
 [[redirects]]
   from = "/p/*"

@@ -1,3 +1,4 @@
+/preview-test  /preview-test.html  200!
 /p/*  /.netlify/functions/render-listing-page?slug=:splat  200!
 /listing/*  /.netlify/functions/render-listing-page?slug=:splat  200!
 /property/*  /.netlify/functions/render-listing-page?slug=:splat  200!

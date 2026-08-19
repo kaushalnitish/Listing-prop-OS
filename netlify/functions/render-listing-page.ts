@@ -143,12 +143,18 @@ export const handler = async (event: any) => {
       }
     }
 
+    // Clean any query string or hash contamination from the slug
+    if (typeof slug === "string") {
+      slug = slug.split("?")[0].split("#")[0].replace(/^\/+|\/+$/g, "").trim();
+    }
+
     const rawHost =
       event.headers?.["x-forwarded-host"] ||
       event.headers?.["host"] ||
       "listingos.netlify.app";
     const proto = event.headers?.["x-forwarded-proto"] || "https";
-    const baseUrl = `${proto}://${rawHost}`.replace(/\/$/, "");
+    const cleanHost = rawHost.split(",")[0].trim();
+    const baseUrl = `${proto}://${cleanHost}`.replace(/\/+$/, "");
 
     let listing: any = null;
 

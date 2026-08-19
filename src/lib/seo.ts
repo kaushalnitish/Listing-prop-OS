@@ -15,7 +15,7 @@ export interface OpenGraphMetadata {
 }
 
 export const DEFAULT_FALLBACK_IMAGE =
-  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&h=800&q=80';
+  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?fm=jpg&fit=crop&w=800&h=800&q=80';
 
 export const DEFAULT_PLATFORM_META: OpenGraphMetadata = {
   title: 'Listing OS — Modern Real Estate Showcase & Single-Property Platform',
@@ -248,11 +248,12 @@ export function extractCoverImageUrl(listing: any, baseUrl: string): string {
     chosenUrl = chosenUrl.replace('http://', 'https://');
   }
 
-  // Optimize Unsplash images for WhatsApp (800x800 square, quality 80, fast loading <100KB)
+  // Optimize Unsplash images for WhatsApp (800x800 square, forced baseline JPEG, quality 80, fast loading <100KB)
   if (chosenUrl.includes('images.unsplash.com')) {
     try {
       const urlObj = new URL(chosenUrl);
-      urlObj.searchParams.set('auto', 'format');
+      urlObj.searchParams.delete('auto');
+      urlObj.searchParams.set('fm', 'jpg');
       urlObj.searchParams.set('fit', 'crop');
       urlObj.searchParams.set('w', '800');
       urlObj.searchParams.set('h', '800');
@@ -264,6 +265,32 @@ export function extractCoverImageUrl(listing: any, baseUrl: string): string {
   }
 
   return chosenUrl;
+}
+
+/**
+ * Constructs a pristine canonical listing URL without any query strings,
+ * hash fragments, or third-party tracking parameters (e.g. utm_source, chatgpt.com, etc.).
+ * Example: "https://listingos.netlify.app/p/the-glasshouse-sanctuary-luxury-villa"
+ */
+export function buildCanonicalListingUrl(rawBaseUrl: string, slugOrId?: string): string {
+  let cleanOrigin = 'https://listingos.netlify.app';
+  if (rawBaseUrl && typeof rawBaseUrl === 'string') {
+    try {
+      const parsed = new URL(rawBaseUrl.startsWith('http') ? rawBaseUrl : `https://${rawBaseUrl}`);
+      cleanOrigin = `${parsed.protocol}//${parsed.host}`;
+    } catch {
+      cleanOrigin = rawBaseUrl.split('?')[0].split('#')[0].replace(/\/+$/, '');
+    }
+  }
+
+  const cleanSlug = (slugOrId || 'property')
+    .toString()
+    .split('?')[0]
+    .split('#')[0]
+    .replace(/^\/+|\/+$/g, '')
+    .trim();
+
+  return `${cleanOrigin}/p/${encodeURIComponent(cleanSlug)}`;
 }
 
 /**
@@ -283,7 +310,7 @@ export function generateListingOpenGraphMetadata(
 
   const cleanBase = reqBaseUrl.replace(/\/$/, '');
   const slug = listing.slug || targetSlug || listing.id || 'property';
-  const canonicalUrl = `${cleanBase}/p/${encodeURIComponent(slug)}`;
+  const canonicalUrl = buildCanonicalListingUrl(cleanBase, slug);
   const title = buildListingTitle(listing);
   const description = buildListingDescription(listing);
   const imageUrl = extractCoverImageUrl(listing, cleanBase);

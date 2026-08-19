@@ -415,8 +415,14 @@ export function injectMetadataIntoHtml(
   const safeImg = escapeUrl(meta.image);
   const safeSite = escapeHtml(meta.siteName || 'Listing OS');
 
-  // 1. Construct the metadata tags block (Prioritizing OG tags at the very top of head)
+  // 1. Construct the metadata tags block (Enforcing charset UTF-8 first, followed by OG tags)
   const tags = [
+    `<meta charset="UTF-8" />`,
+    `<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />`,
+    `<meta name="viewport" content="width=device-width, initial-scale=1.0" />`,
+    `<title>${safeTitle}</title>`,
+    `<meta name="description" content="${safeDesc}" />`,
+    `<link rel="canonical" href="${safeUrl}" />`,
     `<meta property="og:type" content="${escapeHtml(meta.type || 'website')}" />`,
     `<meta property="og:site_name" content="${safeSite}" />`,
     `<meta property="og:title" content="${safeTitle}" />`,
@@ -429,9 +435,6 @@ export function injectMetadataIntoHtml(
     `<meta property="og:image:alt" content="${safeTitle}" />`,
     `<meta property="og:url" content="${safeUrl}" />`,
     `<meta property="og:locale" content="en_US" />`,
-    `<title>${safeTitle}</title>`,
-    `<meta name="description" content="${safeDesc}" />`,
-    `<link rel="canonical" href="${safeUrl}" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:url" content="${safeUrl}" />`,
     `<meta name="twitter:title" content="${safeTitle}" />`,
@@ -450,10 +453,13 @@ export function injectMetadataIntoHtml(
 
   const metaHtml = tags.join('\n    ');
 
-  // 2. Remove existing <title>, <meta name="description">, and prior OG/Twitter/itemprop tags
+  // 2. Remove existing <title>, <meta name="description">, charset, viewport, and prior OG/Twitter/itemprop tags
   let cleanedHtml = htmlTemplate
     .replace(/<title>[\s\S]*?<\/title>/gi, '')
     .replace(/<meta\s+name=["']description["'][\s\S]*?>/gi, '')
+    .replace(/<meta\s+charset=["'][\s\S]*?>/gi, '')
+    .replace(/<meta\s+http-equiv=["'][\s\S]*?>/gi, '')
+    .replace(/<meta\s+name=["']viewport["'][\s\S]*?>/gi, '')
     .replace(/<link\s+rel=["']canonical["'][\s\S]*?>/gi, '')
     .replace(/<meta\s+itemprop=["'][\s\S]*?>/gi, '')
     .replace(/<meta\s+property=["']og:[\s\S]*?>/gi, '')

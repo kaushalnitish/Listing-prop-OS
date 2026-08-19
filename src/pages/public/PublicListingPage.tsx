@@ -53,12 +53,18 @@ export const PublicListingPage: React.FC = () => {
     };
 
     setMetaTag('meta[name="description"]', 'name', 'description', metaDesc);
+    setMetaTag('meta[property="og:site_name"]', 'property', 'og:site_name', 'Listing OS');
     setMetaTag('meta[property="og:title"]', 'property', 'og:title', pageTitle);
     setMetaTag('meta[property="og:description"]', 'property', 'og:description', metaDesc);
-    if (coverImage) setMetaTag('meta[property="og:image"]', 'property', 'og:image', coverImage);
+    if (coverImage) {
+      setMetaTag('meta[property="og:image"]', 'property', 'og:image', coverImage);
+      setMetaTag('meta[property="og:image:secure_url"]', 'property', 'og:image:secure_url', coverImage);
+      setMetaTag('meta[property="og:image:width"]', 'property', 'og:image:width', '800');
+      setMetaTag('meta[property="og:image:height"]', 'property', 'og:image:height', '800');
+    }
     setMetaTag('meta[property="og:type"]', 'property', 'og:type', 'website');
     setMetaTag('meta[property="og:url"]', 'property', 'og:url', window.location.href);
-    setMetaTag('meta[name="twitter:card"]', 'name', 'twitter:card', 'summary_large_image');
+    setMetaTag('meta[name="twitter:card"]', 'name', 'twitter:card', 'summary');
     setMetaTag('meta[name="twitter:title"]', 'name', 'twitter:title', pageTitle);
     setMetaTag('meta[name="twitter:description"]', 'name', 'twitter:description', metaDesc);
     if (coverImage) setMetaTag('meta[name="twitter:image"]', 'name', 'twitter:image', coverImage);

@@ -8,28 +8,34 @@ export interface OpenGraphMetadata {
   price?: string;
   rawPrice?: number;
   currency?: string;
+  imageWidth?: number | string;
+  imageHeight?: number | string;
+  imageType?: string;
   jsonLd?: Record<string, any>;
 }
 
 export const DEFAULT_FALLBACK_IMAGE =
-  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=80';
+  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&h=800&q=80';
 
 export const DEFAULT_PLATFORM_META: OpenGraphMetadata = {
   title: 'Listing OS — Modern Real Estate Showcase & Single-Property Platform',
   description:
     'Experience bespoke single-property showcases with immersive imagery, verified specifications, 4K floorplans, and direct contact with premier agents.',
   image: DEFAULT_FALLBACK_IMAGE,
-  url: 'https://listingos.com',
+  url: 'https://listingos.netlify.app',
   type: 'website',
   siteName: 'Listing OS',
+  imageWidth: 800,
+  imageHeight: 800,
+  imageType: 'image/jpeg',
 };
 
 /**
  * Formats price for social media previews.
  * Examples:
  *   ₹63,90,000 -> "₹63.9 Lakh"
- *   ₹1,50,00,000 -> "₹1.5 Cr"
- *   $4,850,000 -> "$4,850,000"
+ *   ₹1,25,00,000 -> "₹12.5 Cr"
+ *   $4,850,000 -> "$4.85M" or "$4,850,000"
  */
 export function formatPriceForSocial(price?: number | string | null, currency: string = '₹'): string {
   if (price === undefined || price === null || price === '') return '';
@@ -64,6 +70,13 @@ export function formatPriceForSocial(price?: number | string | null, currency: s
 
   // US Dollars
   if (cleanCurrency === '$' || cleanCurrency.toUpperCase() === 'USD') {
+    if (num >= 1000000) {
+      const m = (num / 1000000).toLocaleString('en-US', {
+        maximumFractionDigits: 2,
+        minimumFractionDigits: 0,
+      });
+      return `$${m}M`;
+    }
     return `$${num.toLocaleString('en-US')}`;
   }
 
@@ -83,72 +96,92 @@ export function formatPriceForSocial(price?: number | string | null, currency: s
 
 /**
  * Builds a concise, high-converting Open Graph description
- * combining location, specifications, and property highlights.
+ * tailored specifically for WhatsApp and social media link previews (approx 120-160 chars).
+ *
+ * Example target:
+ * "Luxury 4 BHK Oceanfront Villa in Awas Beach, Alibaug. 5,400 sq ft · Private Infinity Pool · 270° Sea Panoramas."
  */
 export function buildListingDescription(listing: any): string {
   if (!listing) return DEFAULT_PLATFORM_META.description;
 
-  // 1. Location string
-  const loc = listing.location || {};
-  const locParts = [
-    loc.neighborhood || loc.address,
-    loc.city,
-    loc.state,
-    loc.country,
-  ].filter(Boolean);
-  const locationSummary = locParts.slice(0, 3).join(', ');
+  // 1. If custom metaDescription is provided and punchy (up to 180 chars), use it directly
+  if (listing.metaDescription && typeof listing.metaDescription === 'string') {
+    const cleanMeta = listing.metaDescription.trim().replace(/\s+/g, ' ');
+    if (cleanMeta.length >= 25 && cleanMeta.length <= 185) {
+      return truncateText(cleanMeta, 160);
+    }
+  }
 
-  // 2. Specs string (e.g., "3 BHK Residential Floor • 1,242 sq ft")
+  // 2. Structured specs line (e.g., "4 BHK · 5,400 sq ft")
   const specs = listing.specs || {};
   const specParts: string[] = [];
   if (specs.bedrooms) {
     specParts.push(`${specs.bedrooms} BHK`);
   }
-  if (specs.propertyType) {
-    specParts.push(String(specs.propertyType));
-  }
   if (specs.squareFeet) {
     specParts.push(`${Number(specs.squareFeet).toLocaleString()} sq ft`);
   }
-  const specSummary = specParts.join(' ');
+  if (specs.lotSize) {
+    specParts.push(String(specs.lotSize));
+  }
+  const specLine = specParts.join(' · ');
 
-  // 3. Clean excerpt from metaDescription or description
-  let rawText = listing.metaDescription || listing.description || '';
-  // Strip markdown, newlines, and excess whitespace
-  rawText = rawText
-    .replace(/[#*_~`]/g, '')
-    .replace(/\r?\n+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  // 3. Location line (e.g., "Awas Beach, Alibaug")
+  const loc = listing.location || {};
+  const locParts = [
+    loc.neighborhood || loc.address,
+    loc.city,
+    loc.state,
+  ].filter(Boolean);
+  const locationLine = locParts.slice(0, 2).join(', ');
 
-  // If metaDescription already exists and is descriptive, use it directly
-  if (listing.metaDescription && listing.metaDescription.trim().length >= 25) {
-    return truncateText(listing.metaDescription.trim(), 190);
+  // 4. Feature highlight (e.g., "Private Infinity Pool & 270° Ocean Views")
+  let featureLine = '';
+  if (Array.isArray(listing.highlights) && listing.highlights.length > 0) {
+    const cleanHighlights = listing.highlights
+      .map((h: any) => String(h).replace(/^[0-9]+-?(Ft|Foot)\s*/i, '').trim())
+      .filter((h: string) => h.length > 5 && h.length < 45);
+    if (cleanHighlights.length > 0) {
+      featureLine = cleanHighlights.slice(0, 2).join(' · ');
+    }
+  } else if (Array.isArray(listing.amenities) && listing.amenities.length > 0) {
+    featureLine = listing.amenities.slice(0, 3).join(' · ');
+  } else if (listing.tagline && typeof listing.tagline === 'string') {
+    featureLine = truncateText(listing.tagline.trim(), 50);
   }
 
-  // Construct structured description: "<Specs> in <Location>. <Excerpt>"
-  let fullDesc = '';
-  if (specSummary && locationSummary) {
-    fullDesc = `${specSummary} in ${locationSummary}. `;
-  } else if (locationSummary) {
-    fullDesc = `Located in ${locationSummary}. `;
-  } else if (specSummary) {
-    fullDesc = `${specSummary}. `;
+  // 5. Assemble structured description: "<Specs> in <Location>. <Features>."
+  let structured = '';
+  if (specLine && locationLine) {
+    structured = `${specLine} in ${locationLine}.`;
+  } else if (locationLine) {
+    structured = `Located in ${locationLine}.`;
+  } else if (specLine) {
+    structured = `${specLine}.`;
   }
 
-  if (rawText) {
-    fullDesc += rawText;
-  } else if (Array.isArray(listing.highlights) && listing.highlights.length > 0) {
-    fullDesc += listing.highlights.slice(0, 3).join(' • ');
+  if (featureLine) {
+    structured = structured ? `${structured} ${featureLine}.` : `${featureLine}.`;
   }
 
-  return truncateText(fullDesc.trim() || DEFAULT_PLATFORM_META.description, 190);
+  // Fallback to cleaned description excerpt if structured is empty
+  if (!structured || structured.length < 20) {
+    let rawText = listing.description || '';
+    rawText = rawText
+      .replace(/[#*_~`]/g, '')
+      .replace(/\r?\n+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    structured = rawText;
+  }
+
+  return truncateText(structured.trim() || DEFAULT_PLATFORM_META.description, 160);
 }
 
 /**
  * Builds the listing's Open Graph title:
  * "Listing Title — Formatted Price"
- * Example: "Luxury 3 BHK Independent Floor in Sector 115, Mohali — ₹63.9 Lakh"
+ * Example: "The Glasshouse Sanctuary — Luxury 4 BHK Oceanfront Villa — ₹12.5 Cr"
  */
 export function buildListingTitle(listing: any): string {
   if (!listing) return DEFAULT_PLATFORM_META.title;
@@ -156,7 +189,7 @@ export function buildListingTitle(listing: any): string {
   const baseTitle = (listing.title || 'Exclusive Property').trim();
   const formattedPrice = formatPriceForSocial(listing.price, listing.currency || '₹');
 
-  // Check if title already includes price or currency symbol
+  // Check if title already includes formatted price
   if (formattedPrice && !baseTitle.includes(formattedPrice) && !baseTitle.includes(listing.currency || '₹')) {
     return `${baseTitle} — ${formattedPrice}`;
   }
@@ -169,7 +202,9 @@ export function buildListingTitle(listing: any): string {
 }
 
 /**
- * Extracts the primary cover image as an absolute HTTPS URL.
+ * Extracts the primary cover image as an absolute HTTPS URL,
+ * applying square 1:1 cropping parameters (800x800) when available
+ * to trigger the WhatsApp left-hand thumbnail preview layout.
  */
 export function extractCoverImageUrl(listing: any, baseUrl: string): string {
   if (!listing) return DEFAULT_FALLBACK_IMAGE;
@@ -183,7 +218,7 @@ export function extractCoverImageUrl(listing: any, baseUrl: string): string {
     chosenUrl = coverImg.url;
   }
 
-  // 2. Look for the first image in array
+  // 2. Look for the first image in gallery array
   if (!chosenUrl && images.length > 0 && images[0]?.url) {
     chosenUrl = images[0].url;
   }
@@ -198,8 +233,9 @@ export function extractCoverImageUrl(listing: any, baseUrl: string): string {
     chosenUrl = DEFAULT_FALLBACK_IMAGE;
   }
 
-  // Make sure it's an absolute URL
   chosenUrl = chosenUrl.trim();
+
+  // Ensure absolute URL
   if (chosenUrl.startsWith('//')) {
     chosenUrl = `https:${chosenUrl}`;
   } else if (chosenUrl.startsWith('/')) {
@@ -207,9 +243,24 @@ export function extractCoverImageUrl(listing: any, baseUrl: string): string {
     chosenUrl = `${cleanBase}${chosenUrl}`;
   }
 
-  // Upgrade HTTP to HTTPS for social crawlers security rules
+  // Upgrade HTTP to HTTPS for WhatsApp / social scraper compliance
   if (chosenUrl.startsWith('http://')) {
     chosenUrl = chosenUrl.replace('http://', 'https://');
+  }
+
+  // Optimize Unsplash images for WhatsApp (800x800 square, quality 80, fast loading <100KB)
+  if (chosenUrl.includes('images.unsplash.com')) {
+    try {
+      const urlObj = new URL(chosenUrl);
+      urlObj.searchParams.set('auto', 'format');
+      urlObj.searchParams.set('fit', 'crop');
+      urlObj.searchParams.set('w', '800');
+      urlObj.searchParams.set('h', '800');
+      urlObj.searchParams.set('q', '80');
+      return urlObj.toString();
+    } catch {
+      // If URL parsing fails, return as-is
+    }
   }
 
   return chosenUrl;
@@ -281,6 +332,9 @@ export function generateListingOpenGraphMetadata(
     price: formattedPrice,
     rawPrice: listing.price ? Number(listing.price) : undefined,
     currency: listing.currency || '₹',
+    imageWidth: 800,
+    imageHeight: 800,
+    imageType: 'image/jpeg',
     jsonLd,
   };
 }
@@ -304,7 +358,7 @@ function truncateText(text: string, maxLength: number): string {
   if (!text || text.length <= maxLength) return text;
   const truncated = text.substring(0, maxLength);
   const lastSpace = truncated.lastIndexOf(' ');
-  if (lastSpace > 0 && lastSpace > maxLength - 30) {
+  if (lastSpace > 0 && lastSpace > maxLength - 20) {
     return `${truncated.substring(0, lastSpace)}...`;
   }
   return `${truncated}...`;
@@ -324,22 +378,27 @@ export function injectMetadataIntoHtml(
     `<meta name="description" content="${escapeHtml(meta.description)}" />`,
     `<link rel="canonical" href="${escapeHtml(meta.url)}" />`,
     ``,
-    `<!-- Open Graph / Facebook / WhatsApp / LinkedIn / Telegram -->`,
+    `<!-- Schema.org Microdata for WhatsApp & Crawler Fallbacks -->`,
+    `<meta itemprop="name" content="${escapeHtml(meta.title)}" />`,
+    `<meta itemprop="description" content="${escapeHtml(meta.description)}" />`,
+    `<meta itemprop="image" content="${escapeHtml(meta.image)}" />`,
+    ``,
+    `<!-- Open Graph / WhatsApp / Facebook / LinkedIn / Telegram -->`,
+    `<meta property="og:site_name" content="${escapeHtml(meta.siteName || 'Listing OS')}" />`,
     `<meta property="og:type" content="${escapeHtml(meta.type || 'website')}" />`,
     `<meta property="og:url" content="${escapeHtml(meta.url)}" />`,
     `<meta property="og:title" content="${escapeHtml(meta.title)}" />`,
     `<meta property="og:description" content="${escapeHtml(meta.description)}" />`,
     `<meta property="og:image" content="${escapeHtml(meta.image)}" />`,
     `<meta property="og:image:secure_url" content="${escapeHtml(meta.image)}" />`,
-    `<meta property="og:image:type" content="image/jpeg" />`,
-    `<meta property="og:image:width" content="1200" />`,
-    `<meta property="og:image:height" content="630" />`,
+    `<meta property="og:image:type" content="${escapeHtml(meta.imageType || 'image/jpeg')}" />`,
+    `<meta property="og:image:width" content="${meta.imageWidth || '800'}" />`,
+    `<meta property="og:image:height" content="${meta.imageHeight || '800'}" />`,
     `<meta property="og:image:alt" content="${escapeHtml(meta.title)}" />`,
-    `<meta property="og:site_name" content="${escapeHtml(meta.siteName || 'Listing OS')}" />`,
     `<meta property="og:locale" content="en_US" />`,
     ``,
-    `<!-- Twitter / X Card -->`,
-    `<meta name="twitter:card" content="summary_large_image" />`,
+    `<!-- Twitter / X Card (summary triggers the compact side-by-side preview layout) -->`,
+    `<meta name="twitter:card" content="summary" />`,
     `<meta name="twitter:url" content="${escapeHtml(meta.url)}" />`,
     `<meta name="twitter:title" content="${escapeHtml(meta.title)}" />`,
     `<meta name="twitter:description" content="${escapeHtml(meta.description)}" />`,
@@ -357,11 +416,12 @@ export function injectMetadataIntoHtml(
 
   const metaHtml = tags.join('\n    ');
 
-  // 2. Remove existing <title>, <meta name="description">, and prior OG/Twitter tags
+  // 2. Remove existing <title>, <meta name="description">, and prior OG/Twitter/itemprop tags
   let cleanedHtml = htmlTemplate
     .replace(/<title>[\s\S]*?<\/title>/gi, '')
     .replace(/<meta\s+name=["']description["'][\s\S]*?>/gi, '')
     .replace(/<link\s+rel=["']canonical["'][\s\S]*?>/gi, '')
+    .replace(/<meta\s+itemprop=["'][\s\S]*?>/gi, '')
     .replace(/<meta\s+property=["']og:[\s\S]*?>/gi, '')
     .replace(/<meta\s+name=["']twitter:[\s\S]*?>/gi, '');
 
@@ -375,3 +435,4 @@ export function injectMetadataIntoHtml(
   // Fallback if no head tag found
   return `${metaHtml}\n${cleanedHtml}`;
 }
+

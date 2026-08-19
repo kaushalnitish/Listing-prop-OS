@@ -340,7 +340,7 @@ export function generateListingOpenGraphMetadata(
 }
 
 /**
- * Escapes HTML characters for safe attribute and text injection.
+ * Escapes HTML characters for safe text content.
  */
 export function escapeHtml(str: string = ''): string {
   return String(str)
@@ -349,6 +349,17 @@ export function escapeHtml(str: string = ''): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+/**
+ * Escapes URLs for meta attribute values without breaking query parameters (preserving &).
+ */
+export function escapeUrl(str: string = ''): string {
+  return String(str)
+    .replace(/"/g, '%22')
+    .replace(/</g, '%3C')
+    .replace(/>/g, '%3E')
+    .trim();
 }
 
 /**
@@ -371,39 +382,45 @@ export function injectMetadataIntoHtml(
   htmlTemplate: string,
   meta: OpenGraphMetadata
 ): string {
+  const safeTitle = escapeHtml(meta.title);
+  const safeDesc = escapeHtml(meta.description);
+  const safeUrl = escapeUrl(meta.url);
+  const safeImg = escapeUrl(meta.image);
+  const safeSite = escapeHtml(meta.siteName || 'Listing OS');
+
   // 1. Construct the metadata tags block
   const tags = [
     `<!-- Primary Page Meta -->`,
-    `<title>${escapeHtml(meta.title)}</title>`,
-    `<meta name="description" content="${escapeHtml(meta.description)}" />`,
-    `<link rel="canonical" href="${escapeHtml(meta.url)}" />`,
+    `<title>${safeTitle}</title>`,
+    `<meta name="description" content="${safeDesc}" />`,
+    `<link rel="canonical" href="${safeUrl}" />`,
     ``,
     `<!-- Schema.org Microdata for WhatsApp & Crawler Fallbacks -->`,
-    `<meta itemprop="name" content="${escapeHtml(meta.title)}" />`,
-    `<meta itemprop="description" content="${escapeHtml(meta.description)}" />`,
-    `<meta itemprop="image" content="${escapeHtml(meta.image)}" />`,
+    `<meta itemprop="name" content="${safeTitle}" />`,
+    `<meta itemprop="description" content="${safeDesc}" />`,
+    `<meta itemprop="image" content="${safeImg}" />`,
     ``,
     `<!-- Open Graph / WhatsApp / Facebook / LinkedIn / Telegram -->`,
-    `<meta property="og:site_name" content="${escapeHtml(meta.siteName || 'Listing OS')}" />`,
+    `<meta property="og:site_name" content="${safeSite}" />`,
     `<meta property="og:type" content="${escapeHtml(meta.type || 'website')}" />`,
-    `<meta property="og:url" content="${escapeHtml(meta.url)}" />`,
-    `<meta property="og:title" content="${escapeHtml(meta.title)}" />`,
-    `<meta property="og:description" content="${escapeHtml(meta.description)}" />`,
-    `<meta property="og:image" content="${escapeHtml(meta.image)}" />`,
-    `<meta property="og:image:secure_url" content="${escapeHtml(meta.image)}" />`,
+    `<meta property="og:url" content="${safeUrl}" />`,
+    `<meta property="og:title" content="${safeTitle}" />`,
+    `<meta property="og:description" content="${safeDesc}" />`,
+    `<meta property="og:image" content="${safeImg}" />`,
+    `<meta property="og:image:secure_url" content="${safeImg}" />`,
     `<meta property="og:image:type" content="${escapeHtml(meta.imageType || 'image/jpeg')}" />`,
     `<meta property="og:image:width" content="${meta.imageWidth || '800'}" />`,
     `<meta property="og:image:height" content="${meta.imageHeight || '800'}" />`,
-    `<meta property="og:image:alt" content="${escapeHtml(meta.title)}" />`,
+    `<meta property="og:image:alt" content="${safeTitle}" />`,
     `<meta property="og:locale" content="en_US" />`,
     ``,
     `<!-- Twitter / X Card (summary triggers the compact side-by-side preview layout) -->`,
     `<meta name="twitter:card" content="summary" />`,
-    `<meta name="twitter:url" content="${escapeHtml(meta.url)}" />`,
-    `<meta name="twitter:title" content="${escapeHtml(meta.title)}" />`,
-    `<meta name="twitter:description" content="${escapeHtml(meta.description)}" />`,
-    `<meta name="twitter:image" content="${escapeHtml(meta.image)}" />`,
-    `<meta name="twitter:image:alt" content="${escapeHtml(meta.title)}" />`,
+    `<meta name="twitter:url" content="${safeUrl}" />`,
+    `<meta name="twitter:title" content="${safeTitle}" />`,
+    `<meta name="twitter:description" content="${safeDesc}" />`,
+    `<meta name="twitter:image" content="${safeImg}" />`,
+    `<meta name="twitter:image:alt" content="${safeTitle}" />`,
   ];
 
   if (meta.jsonLd) {

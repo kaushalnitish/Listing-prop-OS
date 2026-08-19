@@ -9,25 +9,25 @@
 # Server-Side Rendered Dynamic HTML with Open Graph & Twitter Meta Tags
 [[redirects]]
   from = "/p/*"
-  to = "/.netlify/functions/render-listing-page"
+  to = "/.netlify/functions/render-listing-page?slug=:splat"
   status = 200
   force = true
 
 [[redirects]]
   from = "/listing/*"
-  to = "/.netlify/functions/render-listing-page"
+  to = "/.netlify/functions/render-listing-page?slug=:splat"
   status = 200
   force = true
 
 [[redirects]]
   from = "/property/*"
-  to = "/.netlify/functions/render-listing-page"
+  to = "/.netlify/functions/render-listing-page?slug=:splat"
   status = 200
   force = true
 
 [[redirects]]
   from = "/sample"
-  to = "/.netlify/functions/render-listing-page"
+  to = "/.netlify/functions/render-listing-page?slug=sample"
   status = 200
   force = true
 

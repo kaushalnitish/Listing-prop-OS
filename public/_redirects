@@ -1,0 +1,9 @@
+/p/*  /.netlify/functions/render-listing-page?slug=:splat  200!
+/listing/*  /.netlify/functions/render-listing-page?slug=:splat  200!
+/property/*  /.netlify/functions/render-listing-page?slug=:splat  200!
+/sample  /.netlify/functions/render-listing-page?slug=sample  200!
+/api/og-metadata  /.netlify/functions/og  200
+/api/listings  /.netlify/functions/listings  200
+/api/listings/*  /.netlify/functions/listings?path=:splat  200
+/api/*  /.netlify/functions/:splat  200
+/*  /index.html  200

@@ -53,7 +53,7 @@ export async function parsePropertyDetailsWithAi(
       }
       return {
         success: false,
-        error: `Server responded with status ${res.status}. Please ensure the server / Netlify function is properly deployed with GEMINI_API_KEY.`,
+        error: `Server responded with status ${res.status}. Please ensure the server is properly deployed with GEMINI_API_KEY.`,
       };
     }
 
@@ -66,6 +66,35 @@ export async function parsePropertyDetailsWithAi(
     return {
       success: false,
       error: err?.message || 'Failed to process property details. Please check connection.',
+    };
+  }
+}
+
+export async function researchPropertyIntelligenceWithAi(
+  listing: any
+): Promise<{ success: boolean; data?: any; error?: string; metadata?: any }> {
+  try {
+    const res = await fetch('/api/research-property-intelligence', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ listing }),
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && json.data) {
+        return { success: true, data: json.data, metadata: json.metadata };
+      }
+      return { success: false, error: json.error || 'Failed to research property intelligence' };
+    }
+
+    const errText = await res.text();
+    return { success: false, error: `Research server error: ${res.status} ${errText}` };
+  } catch (err: any) {
+    console.error('Error fetching /api/research-property-intelligence:', err);
+    return {
+      success: false,
+      error: err?.message || 'Failed to perform external market research.',
     };
   }
 }

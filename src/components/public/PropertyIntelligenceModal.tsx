@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   X,
   Sparkles,
@@ -17,9 +17,15 @@ import {
   MapPin,
   ShieldCheck,
   ArrowUpRight,
+  ExternalLink,
+  Globe,
+  Search,
+  Download,
+  Loader2,
 } from 'lucide-react';
 import { IntelligenceCategory, PropertyIntelligenceData } from '../../types/intelligence';
 import { PropertyListing } from '../../types';
+import { generatePropertyIntelligencePdf } from '../../lib/pdfReport';
 
 interface PropertyIntelligenceModalProps {
   category: IntelligenceCategory | null;
@@ -36,6 +42,8 @@ export const PropertyIntelligenceModal: React.FC<PropertyIntelligenceModalProps>
   isOpen,
   onClose,
 }) => {
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
   // Close on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -50,6 +58,19 @@ export const PropertyIntelligenceModal: React.FC<PropertyIntelligenceModalProps>
       document.body.style.overflow = 'unset';
     };
   }, [isOpen, onClose]);
+
+  const handleDownloadPdf = async () => {
+    if (!listing) return;
+    setDownloadingPdf(true);
+    try {
+      await generatePropertyIntelligencePdf(listing, intelligence);
+    } catch (err) {
+      console.error('Failed to generate PDF report:', err);
+      alert('Unable to generate PDF report. Please try again.');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   if (!isOpen || !category) return null;
 
@@ -681,9 +702,56 @@ export const PropertyIntelligenceModal: React.FC<PropertyIntelligenceModalProps>
               </div>
             </div>
           )}
+
+          {/* RESEARCH PROVENANCE & GROUNDED SOURCES */}
+          {intelligence.sources && intelligence.sources.length > 0 && (
+            <div className="mt-6 pt-5 border-t border-zinc-800/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2 text-stone-300">
+                  <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                  <h5 className="text-[11px] font-mono uppercase tracking-wider font-semibold">
+                    Live Web Grounding & Sources ({intelligence.sources.length})
+                  </h5>
+                </div>
+                {intelligence.researchDate && (
+                  <span className="text-[10px] font-mono text-stone-500">
+                    Timestamp: {new Date(intelligence.researchDate).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+
+              {/* Sources Pills */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {intelligence.sources.slice(0, 6).map((source, sIdx) => (
+                  <a
+                    key={sIdx}
+                    href={source.uri}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-2.5 rounded-lg bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800/80 hover:border-zinc-700 text-[11px] text-stone-300 group transition-colors"
+                  >
+                    <span className="truncate pr-2 font-medium group-hover:text-amber-400">
+                      {source.title || 'Market Research Source'}
+                    </span>
+                    <ExternalLink className="w-3 h-3 text-stone-500 group-hover:text-amber-400 shrink-0" />
+                  </a>
+                ))}
+              </div>
+
+              {/* Data Classification Bar */}
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-800/50 px-2 py-0.5 rounded">
+                  ✓ Factual Listing Data: Verified
+                </span>
+                <span className="text-[10px] font-mono text-amber-300 bg-amber-950/40 border border-amber-800/50 px-2 py-0.5 rounded">
+                  ~ Micro-Market Trends: Indicative Benchmark
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Modal Footer with Disclaimer */}
+        {/* Modal Footer with Disclaimer & Actions */}
         <div className="p-4 sm:p-5 border-t border-zinc-800/80 bg-zinc-900/90 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
           <div className="flex items-center space-x-2 text-[10px] text-stone-400 text-center sm:text-left">
             <AlertCircle className="w-3.5 h-3.5 shrink-0 text-stone-500" />
@@ -691,12 +759,36 @@ export const PropertyIntelligenceModal: React.FC<PropertyIntelligenceModalProps>
               This analysis is indicative and does not constitute a formal appraisal or valuation.
             </span>
           </div>
-          <button
-            onClick={onClose}
-            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-stone-200 text-xs font-medium transition-colors cursor-pointer shrink-0"
-          >
-            Close Report
-          </button>
+
+          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+            {listing && (
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                disabled={downloadingPdf}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-stone-100 hover:bg-white text-zinc-950 text-xs font-semibold transition-all shadow-xs disabled:opacity-50 cursor-pointer"
+              >
+                {downloadingPdf ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Generating PDF...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download Report</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-stone-200 text-xs font-medium transition-colors cursor-pointer shrink-0"
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>

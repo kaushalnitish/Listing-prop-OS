@@ -10,11 +10,15 @@ import {
   Key,
   LineChart,
   ChevronRight,
+  Download,
+  Loader2,
+  FileText,
 } from 'lucide-react';
 import { PropertyListing } from '../../types';
 import { IntelligenceCategory } from '../../types/intelligence';
 import { generatePropertyIntelligence } from '../../lib/propertyIntelligence';
 import { PropertyIntelligenceModal } from './PropertyIntelligenceModal';
+import { generatePropertyIntelligencePdf } from '../../lib/pdfReport';
 
 interface PropertyIntelligenceSectionProps {
   listing?: PropertyListing | null;
@@ -24,9 +28,24 @@ export const PropertyIntelligenceSection: React.FC<PropertyIntelligenceSectionPr
   listing,
 }) => {
   const [activeCategory, setActiveCategory] = useState<IntelligenceCategory | null>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   // Generate dynamic intelligence data for this listing
   const intelligence = listing?.intelligence || generatePropertyIntelligence(listing);
+
+  const handleDownloadPdf = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!listing) return;
+    setDownloadingPdf(true);
+    try {
+      await generatePropertyIntelligencePdf(listing, intelligence);
+    } catch (err) {
+      console.error('Failed to generate PDF report:', err);
+      alert('Unable to generate PDF report. Please try again.');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   const intelligenceCards = [
     {
@@ -109,9 +128,42 @@ export const PropertyIntelligenceSection: React.FC<PropertyIntelligenceSectionPr
             <div className="h-px w-8 bg-stone-700 mt-2" />
           </div>
 
-          <div className="flex items-center space-x-2 text-[10px] sm:text-xs font-mono uppercase tracking-wider text-stone-400 shrink-0 self-start sm:self-auto bg-zinc-900/90 border border-zinc-800/80 px-3 py-1.5 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>AI-assisted market research</span>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2.5 shrink-0 self-start sm:self-auto">
+            <div className="flex flex-wrap items-center gap-2 text-[10px] sm:text-xs font-mono uppercase tracking-wider">
+              {intelligence.confidenceLevel === 'verified-research' && (
+                <span className="flex items-center space-x-1.5 text-emerald-400 bg-emerald-950/40 border border-emerald-800/60 px-3 py-1.5 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Verified Research</span>
+                </span>
+              )}
+              {intelligence.sources && intelligence.sources.length > 0 && (
+                <span className="text-stone-300 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-full">
+                  {intelligence.sources.length} Sources Cited
+                </span>
+              )}
+            </div>
+
+            {listing && (
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                disabled={downloadingPdf}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-stone-100 hover:bg-white text-zinc-950 text-[11px] font-semibold tracking-normal transition-all shadow-sm hover:shadow active:scale-98 disabled:opacity-50 cursor-pointer"
+                title="Download complete property intelligence report as PDF"
+              >
+                {downloadingPdf ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Generating PDF...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download Property Report</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
 

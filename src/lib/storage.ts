@@ -57,6 +57,7 @@ function toDbRow(listing: PropertyListing) {
     status: listing.status || 'published',
     seo_title: listing.seoTitle || null,
     meta_description: listing.metaDescription || null,
+    intelligence: listing.intelligence || null,
     walkthrough_video_url: listing.walkthrough_video_url || listing.walkthroughVideoUrl || null,
     walkthrough_video_type: listing.walkthrough_video_type || listing.walkthroughVideoType || null,
     created_at: listing.createdAt || now,
@@ -96,6 +97,18 @@ function fromDbRow(row: any): PropertyListing {
     status: row.status === 'draft' || row.status === 'archived' ? row.status : 'published',
     seoTitle: row.seoTitle || row.seo_title || undefined,
     metaDescription: row.metaDescription || row.meta_description || undefined,
+    intelligence:
+      typeof row.intelligence === 'object' && row.intelligence
+        ? row.intelligence
+        : typeof row.intelligence === 'string'
+        ? (() => {
+            try {
+              return JSON.parse(row.intelligence);
+            } catch {
+              return undefined;
+            }
+          })()
+        : undefined,
     walkthrough_video_url: videoUrl,
     walkthrough_video_type: videoType,
     walkthrough_video_thumbnail: videoThumb,

@@ -117,4 +117,17 @@ export interface PropertyIntelligenceData {
     structuralDemandFactors: string[];
     fiveYearPerspective: string;
   };
+  researchDate?: string;
+  confidenceLevel?: 'verified-research' | 'indicative-estimate' | 'partial-research';
+  sources?: Array<{
+    title: string;
+    uri: string;
+    snippet?: string;
+  }>;
+  searchQueriesPerformed?: string[];
+  dataClassification?: {
+    verifiedFields: string[];
+    indicativeFields: string[];
+    unavailableFields: string[];
+  };
 }

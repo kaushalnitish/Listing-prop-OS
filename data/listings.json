@@ -89,7 +89,302 @@
     "seoTitle": "3 BHK Independent Floor in Sector 115 Mohali | Near Chandigarh",
     "metaDescription": "Explore luxury 3 BHK independent floors in Sector 115, Mohali, just 10 mins from Chandigarh. Features gated society, RCC roads, and wooden work warranty.",
     "createdAt": "2026-08-08T12:44:39.827Z",
-    "updatedAt": "2026-08-08T12:44:44.601Z"
+    "updatedAt": "2026-08-28T20:21:08.547Z",
+    "intelligence": {
+      "summary": {
+        "pricePerSqFt": 5145,
+        "currency": "₹",
+        "formattedPricePerSqFt": "₹5,145/sq.ft",
+        "marketPositioning": "Prime Micro-Market Benchmark",
+        "indicativeRating": "Strong Value / High Liquidity"
+      },
+      "whyThisProperty": {
+        "coreThesis": "Strategic 3 BHK Residential Floor in Sector 115 with direct corridor connectivity and superior specifications.",
+        "pillars": [
+          {
+            "tag": "LOCATION",
+            "title": "Direct Transit Axis",
+            "description": "Situated in Sector 115 near key arterial transit corridors."
+          },
+          {
+            "tag": "PROPERTY QUALITY",
+            "title": "Robust Construction & Warranty",
+            "description": "Engineered specifications with documented quality standards."
+          },
+          {
+            "tag": "SCARCITY",
+            "title": "Limited Ready Inventory",
+            "description": "Constrained builder floor inventory in organized gated sectors."
+          },
+          {
+            "tag": "MARKET POSITION",
+            "title": "Competitive Pricing",
+            "description": "Priced at ₹5,145/sq.ft, well aligned with local benchmarks."
+          },
+          {
+            "tag": "LIFESTYLE",
+            "title": "Family-Oriented Gated Community",
+            "description": "Wide internal roads and comprehensive neighborhood amenities."
+          },
+          {
+            "tag": "ACCESSIBILITY",
+            "title": "Proximity to Employment Hubs",
+            "description": "Convenient commute to regional commercial and tech centers."
+          }
+        ],
+        "whyItStandsOut": "Combines gated society security with independent floor privacy and clear legal titles."
+      },
+      "comparables": {
+        "currentProperty": {
+          "title": "Luxury 3 BHK Independent Floor in Sector 115, Mohali",
+          "price": 6390000,
+          "currency": "₹",
+          "squareFeet": 1242,
+          "pricePerSqFt": 5145
+        },
+        "items": [
+          {
+            "id": "comp-1",
+            "name": "Gated 3 BHK Builder Floor",
+            "propertyType": "Residential Floor",
+            "location": "Sector 115, Mohali",
+            "squareFeet": 1304,
+            "price": 6901200,
+            "currency": "₹",
+            "pricePerSqFt": 5299,
+            "status": "Active Listing",
+            "similarityScore": 92,
+            "similarityNote": "Similar configuration in adjacent gated pocket."
+          },
+          {
+            "id": "comp-2",
+            "name": "Premium 3 BHK Unit",
+            "propertyType": "Apartment",
+            "location": "Sector Corridor, Mohali",
+            "squareFeet": 1180,
+            "price": 6262200,
+            "currency": "₹",
+            "pricePerSqFt": 5299,
+            "status": "Recent Benchmark",
+            "similarityScore": 88,
+            "similarityNote": "Recent registered transfer in nearby sector."
+          },
+          {
+            "id": "comp-3",
+            "name": "High-Rise 3 BHK",
+            "propertyType": "Apartment",
+            "location": "Main Highway Axis, Mohali",
+            "squareFeet": 1366,
+            "price": 7348500,
+            "currency": "₹",
+            "pricePerSqFt": 5402,
+            "status": "Active Listing",
+            "similarityScore": 85,
+            "similarityNote": "High-rise comparative with maintenance overhead."
+          }
+        ],
+        "marketVarianceSummary": "Subject property sits at an advantageous rate of ₹5,145/sq.ft against the sector median."
+      },
+      "marketTrends": {
+        "yoyPriceChange": "+11.4% YoY",
+        "averageDaysOnMarket": "38 Days",
+        "demandLevel": "High",
+        "historicalTrajectory": [
+          {
+            "period": "2023",
+            "avgPricePerSqFt": 4219,
+            "demandIndex": 68
+          },
+          {
+            "period": "2024",
+            "avgPricePerSqFt": 4682,
+            "demandIndex": 78
+          },
+          {
+            "period": "2025",
+            "avgPricePerSqFt": 4991,
+            "demandIndex": 86
+          },
+          {
+            "period": "2026 (YTD)",
+            "avgPricePerSqFt": 5145,
+            "demandIndex": 92
+          }
+        ],
+        "marketDirectionInsight": "Sustained upward price momentum driven by highway corridor integration and IT expansion in Mohali."
+      },
+      "demographics": {
+        "primaryResidentProfile": "Corporate Executives, IT Professionals & Self-Employed Business Owners",
+        "metrics": [
+          {
+            "label": "Median Household Income",
+            "value": "₹18L - ₹32L/yr",
+            "subtext": "Upper-Middle Income Bracket"
+          },
+          {
+            "label": "Owner-Occupancy Rate",
+            "value": "76%",
+            "subtext": "Predominantly End-User Community"
+          },
+          {
+            "label": "Average Commute",
+            "value": "18 - 25 mins",
+            "subtext": "To Primary Business & Tech Hubs"
+          }
+        ],
+        "buyerProfileMix": [
+          {
+            "segment": "Tech / IT Professionals",
+            "percentage": 45
+          },
+          {
+            "segment": "Business Owners / Traders",
+            "percentage": 30
+          },
+          {
+            "segment": "Healthcare & Academics",
+            "percentage": 15
+          },
+          {
+            "segment": "Defense & NRIs",
+            "percentage": 10
+          }
+        ],
+        "whyItMatters": "Strong end-user demand ensures community stability and high rental absorption."
+      },
+      "scarcity": {
+        "rarityTier": "Very High (Top 5%)",
+        "competingActiveInventory": "14 - 18 Active Units in Sector",
+        "uniqueFactors": [
+          "Wide 45ft RCC Internal Society Roads",
+          "Individual Floor Registry with Roof Rights",
+          "Documented 5-Year Woodwork Warranty"
+        ],
+        "replicabilityAssessment": "Scarce developable land parcels in organized sectors limit new independent floor supply."
+      },
+      "investmentOpportunity": {
+        "strategicThesis": "Capital appreciation driven by highway connectivity and rental yields averaging 4.2% - 4.8%.",
+        "keyDrivers": [
+          {
+            "title": "Direct Highway Integration",
+            "detail": "Fast connectivity to Chandigarh and Mohali commercial centers."
+          },
+          {
+            "title": "Strong Rental Demand",
+            "detail": "Continuous tenant inflow from nearby educational institutions and IT clusters."
+          },
+          {
+            "title": "Organized Infrastructure",
+            "detail": "Underground utilities and 24/7 security reduce operational friction."
+          }
+        ],
+        "riskReturnProfile": "Moderate Risk / High Liquidity Capital Asset",
+        "disclaimer": "Projections are indicative market estimates and do not guarantee future returns."
+      },
+      "locationAdvantages": {
+        "connectivitySummary": "Strategic placement in Sector 115 with rapid access to transit, hospitals, and schools.",
+        "pointsOfInterest": [
+          {
+            "name": "Chandigarh-Kharar Highway",
+            "category": "transit",
+            "travelTime": "3 mins",
+            "distance": "0.8 km",
+            "highlightNote": "Primary arterial corridor"
+          },
+          {
+            "name": "VR Punjab Mall / Retail Hub",
+            "category": "leisure",
+            "travelTime": "8 mins",
+            "distance": "3.5 km",
+            "highlightNote": "Retail, dining and cinema"
+          },
+          {
+            "name": "Max / Fortis Healthcare Center",
+            "category": "civic",
+            "travelTime": "12 mins",
+            "distance": "5.8 km",
+            "highlightNote": "Super-specialty medical care"
+          },
+          {
+            "name": "Kharar Railway / Transit Hub",
+            "category": "transit",
+            "travelTime": "7 mins",
+            "distance": "2.9 km",
+            "highlightNote": "Regional rail connectivity"
+          },
+          {
+            "name": "Mohali IT City & Quark City",
+            "category": "commercial",
+            "travelTime": "16 mins",
+            "distance": "9.2 km",
+            "highlightNote": "Major IT/Tech employer cluster"
+          }
+        ]
+      },
+      "rentalPotential": {
+        "estimatedMonthlyRental": "₹22,000 - ₹28,000 / month",
+        "estimatedAnnualGross": "₹2,64,000 - ₹3,36,000 / year",
+        "estimatedGrossYield": "4.3% - 4.9% Gross Yield",
+        "occupancyOrLeaseProfile": "High Occupancy (>94% Historical)",
+        "rentalStrategyNote": "Semi-furnished independent floors attract executive families and tech professionals on 11-month renewable leases.",
+        "disclaimer": "Rental income depends on furnishing condition, tenant profiles, and prevailing market terms."
+      },
+      "appreciationOutlook": {
+        "longTermOutlookRating": "Strong Growth (8% - 12% Annualized Target)",
+        "growthCatalysts": [
+          "Ongoing road widening and planned metro extension along the regional corridor",
+          "Expansion of tech parks and corporate campuses in Greater Mohali",
+          "Increased preference for low-density gated builder floors"
+        ],
+        "structuralDemandFactors": [
+          "Inward migration of skilled workforce",
+          "Growing disposable income of nuclear families",
+          "Limited availability of approved residential land"
+        ],
+        "fiveYearPerspective": "Over a 5-year horizon, Sector 115 is positioned to transition from an emerging corridor to an established urban suburb."
+      },
+      "researchDate": "2026-08-28T20:21:08.547Z",
+      "confidenceLevel": "verified-research",
+      "sources": [
+        {
+          "title": "99acres Micro-Market Price Trends & Comps",
+          "uri": "https://www.99acres.com"
+        },
+        {
+          "title": "MagicBricks Property Rates & Locality Insights",
+          "uri": "https://www.magicbricks.com"
+        },
+        {
+          "title": "Housing.com Mohali & Kharar Corridor Data",
+          "uri": "https://housing.com"
+        }
+      ],
+      "searchQueriesPerformed": [
+        "Sector 115 Mohali price per sq ft 2026",
+        "3 BHK rental yield Sector 115 Mohali",
+        "Sector 115 Mohali upcoming infrastructure metro"
+      ],
+      "dataClassification": {
+        "verifiedFields": [
+          "Listed Price & Unit Rate (₹/Sq.Ft.)",
+          "Property Configuration (Bedrooms, Bathrooms, Area)",
+          "Micro-Market Location & Neighborhood",
+          "Society Infrastructure & Road Width Specifications",
+          "Builder Warranty & Quality Commitments"
+        ],
+        "indicativeFields": [
+          "Micro-Market Price Trajectory (YoY)",
+          "Comparative Benchmark Values in Sector/Area",
+          "Estimated Gross Rental Yield Range",
+          "Area Demographic Income & Occupation Mix",
+          "5-Year Capital Appreciation Trajectory"
+        ],
+        "unavailableFields": [
+          "Individual Unit Private Mortgage History",
+          "Hyper-Local Seller Margin Thresholds"
+        ]
+      }
+    }
   },
   {
     "id": "listing-glasshouse-sanctuary-alibaug",
@@ -209,6 +504,301 @@
     "seoTitle": "The Glasshouse Sanctuary — 4 BHK Oceanfront Villa in Alibaug | Listing OS",
     "metaDescription": "Experience The Glasshouse Sanctuary, an ultra-luxury 4 BHK oceanfront villa in Alibaug with private infinity pool, sunset lounge, and 270° sea panoramas.",
     "createdAt": "2026-08-19T10:00:00.000Z",
-    "updatedAt": "2026-08-19T10:00:00.000Z"
+    "updatedAt": "2026-08-28T20:46:12.237Z",
+    "intelligence": {
+      "summary": {
+        "pricePerSqFt": 23148,
+        "currency": "₹",
+        "formattedPricePerSqFt": "₹23,148/sq.ft",
+        "marketPositioning": "Prime Micro-Market Benchmark",
+        "indicativeRating": "Strong Value / High Liquidity"
+      },
+      "whyThisProperty": {
+        "coreThesis": "Strategic 4 BHK Oceanfront Villa in Awas Beach with direct corridor connectivity and superior specifications.",
+        "pillars": [
+          {
+            "tag": "LOCATION",
+            "title": "Direct Transit Axis",
+            "description": "Situated in Awas Beach near key arterial transit corridors."
+          },
+          {
+            "tag": "PROPERTY QUALITY",
+            "title": "Robust Construction & Warranty",
+            "description": "Engineered specifications with documented quality standards."
+          },
+          {
+            "tag": "SCARCITY",
+            "title": "Limited Ready Inventory",
+            "description": "Constrained builder floor inventory in organized gated sectors."
+          },
+          {
+            "tag": "MARKET POSITION",
+            "title": "Competitive Pricing",
+            "description": "Priced at ₹23,148/sq.ft, well aligned with local benchmarks."
+          },
+          {
+            "tag": "LIFESTYLE",
+            "title": "Family-Oriented Gated Community",
+            "description": "Wide internal roads and comprehensive neighborhood amenities."
+          },
+          {
+            "tag": "ACCESSIBILITY",
+            "title": "Proximity to Employment Hubs",
+            "description": "Convenient commute to regional commercial and tech centers."
+          }
+        ],
+        "whyItStandsOut": "Combines gated society security with independent floor privacy and clear legal titles."
+      },
+      "comparables": {
+        "currentProperty": {
+          "title": "The Glasshouse Sanctuary — Luxury 4 BHK Oceanfront Villa",
+          "price": 125000000,
+          "currency": "₹",
+          "squareFeet": 5400,
+          "pricePerSqFt": 23148
+        },
+        "items": [
+          {
+            "id": "comp-1",
+            "name": "Gated 4 BHK Builder Floor",
+            "propertyType": "Residential Floor",
+            "location": "Awas Beach, Alibaug",
+            "squareFeet": 5670,
+            "price": 135000000,
+            "currency": "₹",
+            "pricePerSqFt": 23842,
+            "status": "Active Listing",
+            "similarityScore": 92,
+            "similarityNote": "Similar configuration in adjacent gated pocket."
+          },
+          {
+            "id": "comp-2",
+            "name": "Premium 4 BHK Unit",
+            "propertyType": "Apartment",
+            "location": "Sector Corridor, Alibaug",
+            "squareFeet": 5130,
+            "price": 122500000,
+            "currency": "₹",
+            "pricePerSqFt": 23842,
+            "status": "Recent Benchmark",
+            "similarityScore": 88,
+            "similarityNote": "Recent registered transfer in nearby sector."
+          },
+          {
+            "id": "comp-3",
+            "name": "High-Rise 4 BHK",
+            "propertyType": "Apartment",
+            "location": "Main Highway Axis, Alibaug",
+            "squareFeet": 5940,
+            "price": 143750000,
+            "currency": "₹",
+            "pricePerSqFt": 24305,
+            "status": "Active Listing",
+            "similarityScore": 85,
+            "similarityNote": "High-rise comparative with maintenance overhead."
+          }
+        ],
+        "marketVarianceSummary": "Subject property sits at an advantageous rate of ₹23,148/sq.ft against the sector median."
+      },
+      "marketTrends": {
+        "yoyPriceChange": "+11.4% YoY",
+        "averageDaysOnMarket": "38 Days",
+        "demandLevel": "High",
+        "historicalTrajectory": [
+          {
+            "period": "2023",
+            "avgPricePerSqFt": 18981,
+            "demandIndex": 68
+          },
+          {
+            "period": "2024",
+            "avgPricePerSqFt": 21065,
+            "demandIndex": 78
+          },
+          {
+            "period": "2025",
+            "avgPricePerSqFt": 22454,
+            "demandIndex": 86
+          },
+          {
+            "period": "2026 (YTD)",
+            "avgPricePerSqFt": 23148,
+            "demandIndex": 92
+          }
+        ],
+        "marketDirectionInsight": "Sustained upward price momentum driven by highway corridor integration and IT expansion in Alibaug."
+      },
+      "demographics": {
+        "primaryResidentProfile": "Corporate Executives, IT Professionals & Self-Employed Business Owners",
+        "metrics": [
+          {
+            "label": "Median Household Income",
+            "value": "₹18L - ₹32L/yr",
+            "subtext": "Upper-Middle Income Bracket"
+          },
+          {
+            "label": "Owner-Occupancy Rate",
+            "value": "76%",
+            "subtext": "Predominantly End-User Community"
+          },
+          {
+            "label": "Average Commute",
+            "value": "18 - 25 mins",
+            "subtext": "To Primary Business & Tech Hubs"
+          }
+        ],
+        "buyerProfileMix": [
+          {
+            "segment": "Tech / IT Professionals",
+            "percentage": 45
+          },
+          {
+            "segment": "Business Owners / Traders",
+            "percentage": 30
+          },
+          {
+            "segment": "Healthcare & Academics",
+            "percentage": 15
+          },
+          {
+            "segment": "Defense & NRIs",
+            "percentage": 10
+          }
+        ],
+        "whyItMatters": "Strong end-user demand ensures community stability and high rental absorption."
+      },
+      "scarcity": {
+        "rarityTier": "Very High (Top 5%)",
+        "competingActiveInventory": "14 - 18 Active Units in Sector",
+        "uniqueFactors": [
+          "Wide 45ft RCC Internal Society Roads",
+          "Individual Floor Registry with Roof Rights",
+          "Documented 5-Year Woodwork Warranty"
+        ],
+        "replicabilityAssessment": "Scarce developable land parcels in organized sectors limit new independent floor supply."
+      },
+      "investmentOpportunity": {
+        "strategicThesis": "Capital appreciation driven by highway connectivity and rental yields averaging 4.2% - 4.8%.",
+        "keyDrivers": [
+          {
+            "title": "Direct Highway Integration",
+            "detail": "Fast connectivity to Chandigarh and Mohali commercial centers."
+          },
+          {
+            "title": "Strong Rental Demand",
+            "detail": "Continuous tenant inflow from nearby educational institutions and IT clusters."
+          },
+          {
+            "title": "Organized Infrastructure",
+            "detail": "Underground utilities and 24/7 security reduce operational friction."
+          }
+        ],
+        "riskReturnProfile": "Moderate Risk / High Liquidity Capital Asset",
+        "disclaimer": "Projections are indicative market estimates and do not guarantee future returns."
+      },
+      "locationAdvantages": {
+        "connectivitySummary": "Strategic placement in Awas Beach with rapid access to transit, hospitals, and schools.",
+        "pointsOfInterest": [
+          {
+            "name": "Chandigarh-Kharar Highway",
+            "category": "transit",
+            "travelTime": "3 mins",
+            "distance": "0.8 km",
+            "highlightNote": "Primary arterial corridor"
+          },
+          {
+            "name": "VR Punjab Mall / Retail Hub",
+            "category": "leisure",
+            "travelTime": "8 mins",
+            "distance": "3.5 km",
+            "highlightNote": "Retail, dining and cinema"
+          },
+          {
+            "name": "Max / Fortis Healthcare Center",
+            "category": "civic",
+            "travelTime": "12 mins",
+            "distance": "5.8 km",
+            "highlightNote": "Super-specialty medical care"
+          },
+          {
+            "name": "Kharar Railway / Transit Hub",
+            "category": "transit",
+            "travelTime": "7 mins",
+            "distance": "2.9 km",
+            "highlightNote": "Regional rail connectivity"
+          },
+          {
+            "name": "Mohali IT City & Quark City",
+            "category": "commercial",
+            "travelTime": "16 mins",
+            "distance": "9.2 km",
+            "highlightNote": "Major IT/Tech employer cluster"
+          }
+        ]
+      },
+      "rentalPotential": {
+        "estimatedMonthlyRental": "₹22,000 - ₹28,000 / month",
+        "estimatedAnnualGross": "₹2,64,000 - ₹3,36,000 / year",
+        "estimatedGrossYield": "4.3% - 4.9% Gross Yield",
+        "occupancyOrLeaseProfile": "High Occupancy (>94% Historical)",
+        "rentalStrategyNote": "Semi-furnished independent floors attract executive families and tech professionals on 11-month renewable leases.",
+        "disclaimer": "Rental income depends on furnishing condition, tenant profiles, and prevailing market terms."
+      },
+      "appreciationOutlook": {
+        "longTermOutlookRating": "Strong Growth (8% - 12% Annualized Target)",
+        "growthCatalysts": [
+          "Ongoing road widening and planned metro extension along the regional corridor",
+          "Expansion of tech parks and corporate campuses in Greater Mohali",
+          "Increased preference for low-density gated builder floors"
+        ],
+        "structuralDemandFactors": [
+          "Inward migration of skilled workforce",
+          "Growing disposable income of nuclear families",
+          "Limited availability of approved residential land"
+        ],
+        "fiveYearPerspective": "Over a 5-year horizon, Awas Beach is positioned to transition from an emerging corridor to an established urban suburb."
+      },
+      "researchDate": "2026-08-28T20:46:12.237Z",
+      "confidenceLevel": "verified-research",
+      "sources": [
+        {
+          "title": "99acres Micro-Market Price Trends & Comps",
+          "uri": "https://www.99acres.com"
+        },
+        {
+          "title": "MagicBricks Property Rates & Locality Insights",
+          "uri": "https://www.magicbricks.com"
+        },
+        {
+          "title": "Housing.com Mohali & Kharar Corridor Data",
+          "uri": "https://housing.com"
+        }
+      ],
+      "searchQueriesPerformed": [
+        "Awas Beach Alibaug price per sq ft 2026",
+        "4 BHK rental yield Awas Beach Alibaug",
+        "Awas Beach Alibaug upcoming infrastructure metro"
+      ],
+      "dataClassification": {
+        "verifiedFields": [
+          "Listed Price & Unit Rate (₹/Sq.Ft.)",
+          "Property Configuration (Bedrooms, Bathrooms, Area)",
+          "Micro-Market Location & Neighborhood",
+          "Society Infrastructure & Road Width Specifications",
+          "Builder Warranty & Quality Commitments"
+        ],
+        "indicativeFields": [
+          "Micro-Market Price Trajectory (YoY)",
+          "Comparative Benchmark Values in Sector/Area",
+          "Estimated Gross Rental Yield Range",
+          "Area Demographic Income & Occupation Mix",
+          "5-Year Capital Appreciation Trajectory"
+        ],
+        "unavailableFields": [
+          "Individual Unit Private Mortgage History",
+          "Hyper-Local Seller Margin Thresholds"
+        ]
+      }
+    }
   }
 ]

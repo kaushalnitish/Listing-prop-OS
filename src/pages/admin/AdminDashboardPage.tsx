@@ -20,8 +20,12 @@ import {
   Bed,
   Bath,
   Maximize2,
+  Sparkles,
+  Loader2,
+  Globe,
 } from 'lucide-react';
 import { getListings, saveListing, deleteListing } from '../../lib/storage';
+import { researchPropertyIntelligenceWithAi } from '../../lib/aiParser';
 import { PropertyListing } from '../../types';
 
 export const AdminDashboardPage: React.FC = () => {
@@ -46,6 +50,7 @@ export const AdminDashboardPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'archived'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'price-low' | 'price-high' | 'title'>('newest');
+  const [refreshingIntelId, setRefreshingIntelId] = useState<string | null>(null);
 
   const fetchListingsData = async () => {
     setLoading(true);
@@ -61,6 +66,39 @@ export const AdminDashboardPage: React.FC = () => {
       setListings([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefreshIntelligence = async (listing: PropertyListing) => {
+    setRefreshingIntelId(listing.id);
+    try {
+      const result = await researchPropertyIntelligenceWithAi(listing);
+      if (result.success && result.data) {
+        const updated: PropertyListing = {
+          ...listing,
+          intelligence: result.data,
+          updatedAt: new Date().toISOString(),
+        };
+        await saveListing(updated);
+        await fetchListingsData();
+        setToastMessage({
+          type: 'success',
+          message: `Property Intelligence updated with ${result.metadata?.sourcesFound || 0} live sources!`,
+        });
+      } else {
+        setToastMessage({
+          type: 'error',
+          message: result.error || 'Failed to refresh intelligence.',
+        });
+      }
+    } catch (err: any) {
+      console.error('Error refreshing intelligence:', err);
+      setToastMessage({
+        type: 'error',
+        message: err.message || 'Error executing external research.',
+      });
+    } finally {
+      setRefreshingIntelId(null);
     }
   };
 
@@ -403,7 +441,7 @@ export const AdminDashboardPage: React.FC = () => {
                       </span>
                     </p>
 
-                    {/* Quick Specs Badges */}
+                    {/* Quick Specs & Intelligence Status Badges */}
                     <div className="flex flex-wrap items-center gap-2 pt-1">
                       {item.specs?.bedrooms ? (
                         <span className="text-[11px] text-stone-600 bg-stone-50 px-2 py-0.5 rounded-md border border-stone-200/60 font-medium inline-flex items-center gap-1">
@@ -423,6 +461,18 @@ export const AdminDashboardPage: React.FC = () => {
                           {item.specs.squareFeet} sqft
                         </span>
                       ) : null}
+
+                      {/* Intelligence status tag */}
+                      {item.intelligence ? (
+                        <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/80 font-mono font-medium inline-flex items-center gap-1">
+                          <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
+                          <span>Intel ({item.intelligence.sources?.length || 0} src)</span>
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-stone-500 bg-stone-100 px-2 py-0.5 rounded-md border border-stone-200 font-mono inline-flex items-center gap-1">
+                          <span>Intel Pending</span>
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -433,6 +483,21 @@ export const AdminDashboardPage: React.FC = () => {
                     </span>
 
                     <div className="flex items-center gap-1">
+                      {/* Refresh Intelligence Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleRefreshIntelligence(item)}
+                        disabled={refreshingIntelId === item.id}
+                        className="p-1.5 rounded-lg text-amber-600 hover:text-amber-700 hover:bg-amber-50 transition-colors disabled:opacity-50"
+                        title="Refresh live external market research & intelligence"
+                      >
+                        {refreshingIntelId === item.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-4 h-4" />
+                        )}
+                      </button>
+
                       {/* View Link */}
                       <a
                         href={`/p/${item.slug}`}

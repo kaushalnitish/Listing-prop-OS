@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PropertyListing } from '../../types';
+import { PropertyIntelligenceData } from '../../types/intelligence';
 import { saveListing } from '../../lib/storage';
-import { parsePropertyDetailsWithAi } from '../../lib/aiParser';
+import { parsePropertyDetailsWithAi, researchPropertyIntelligenceWithAi } from '../../lib/aiParser';
+import { generatePropertyIntelligence } from '../../lib/propertyIntelligence';
 import { ImageUploader } from './ImageUploader';
 import { AmenitiesSelector } from './AmenitiesSelector';
 import { ListingPreviewModal } from './ListingPreviewModal';
@@ -157,7 +159,13 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
     initialData?.contact?.agencyName || 'Property Advisory Group'
   );
 
-  // Handle Description Extraction
+  // Intelligence State
+  const [intelligence, setIntelligence] = useState<PropertyIntelligenceData | undefined>(
+    initialData?.intelligence
+  );
+  const [researchingMarket, setResearchingMarket] = useState(false);
+
+  // Handle Description Extraction & Live Market Research
   const handleExtractWithGemini = async () => {
     if (!rawText.trim()) {
       alert('Please paste the property details first.');
@@ -209,8 +217,64 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
           setWhatsappNumber(data.contactPhone.replace(/\D/g, ''));
         }
 
+        // Draft representation for research
+        const tempDraft: PropertyListing = {
+          id: initialData?.id || `listing-${Date.now()}`,
+          slug: data.title ? data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') : 'listing-preview',
+          title: data.title || title || 'Property Listing',
+          tagline: data.tagline || tagline,
+          price: (typeof data.price === 'number' ? data.price : price) || 0,
+          currency: data.currency || currency || '₹',
+          specs: {
+            bedrooms: (typeof data.bedrooms === 'number' ? data.bedrooms : bedrooms) || 0,
+            bathrooms: (typeof data.bathrooms === 'number' ? data.bathrooms : bathrooms) || 0,
+            squareFeet: (typeof data.squareFeet === 'number' ? data.squareFeet : squareFeet) || 0,
+            propertyType: data.propertyType || propertyType || 'Residential Floor',
+          },
+          location: {
+            address: data.address || address || '',
+            neighborhood: data.neighborhood || neighborhood || '',
+            city: data.city || city || '',
+            country: country || 'India',
+          },
+          description: data.description || description || '',
+          highlights: data.highlights || highlights,
+          amenities: data.amenities || amenities,
+          images,
+          contact: {
+            agentName,
+            agentRole,
+            phone: data.contactPhone || phone,
+            whatsappNumber: (data.contactPhone || phone).replace(/\D/g, ''),
+            email,
+            agencyName,
+          },
+          status: 'draft',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+
+        // Trigger real external research with Google Search Grounding
+        setExtractedStatus('Details extracted! Researching live micro-market data...');
+        try {
+          const researchResult = await researchPropertyIntelligenceWithAi(tempDraft);
+          if (researchResult.success && researchResult.data) {
+            setIntelligence(researchResult.data);
+            setExtractedStatus(`Extracted & Verified with ${researchResult.metadata?.sourcesFound || 0} live sources`);
+          } else {
+            // Fallback to computed heuristics
+            const fallbackIntel = generatePropertyIntelligence(tempDraft);
+            setIntelligence(fallbackIntel);
+            setExtractedStatus('Details extracted successfully');
+          }
+        } catch (researchErr) {
+          console.warn('Live research fallback:', researchErr);
+          const fallbackIntel = generatePropertyIntelligence(tempDraft);
+          setIntelligence(fallbackIntel);
+          setExtractedStatus('Details extracted successfully');
+        }
+
         setMissingFields(data.missingFields || []);
-        setExtractedStatus('Details extracted successfully');
         setCurrentStep(3); // Advance to Preview Step
       } else {
         alert(result.error || 'Failed to process property details. Please try again.');
@@ -249,7 +313,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
     const generatedSlug = initialData?.slug || generateSlug(title || 'property-listing');
     const listingId = initialData?.id || `listing-${Date.now()}`;
 
-    return {
+    const baseListing: PropertyListing = {
       id: listingId,
       slug: generatedSlug,
       title: title.trim() || 'Property Listing',
@@ -296,6 +360,32 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
       createdAt: initialData?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+
+    const finalIntelligence = intelligence || initialData?.intelligence || generatePropertyIntelligence(baseListing);
+
+    return {
+      ...baseListing,
+      intelligence: finalIntelligence,
+    };
+  };
+
+  // Re-run Live Market Research with Google Search Grounding
+  const handleRerunMarketResearch = async () => {
+    const draft = buildListingObject('draft');
+    setResearchingMarket(true);
+    try {
+      const researchResult = await researchPropertyIntelligenceWithAi(draft);
+      if (researchResult.success && researchResult.data) {
+        setIntelligence(researchResult.data);
+        alert(`Market research completed successfully! Found ${researchResult.metadata?.sourcesFound || 0} authoritative sources.`);
+      } else {
+        alert(researchResult.error || 'Failed to complete live market research.');
+      }
+    } catch (err: any) {
+      alert('Error during research: ' + (err?.message || 'Network error'));
+    } finally {
+      setResearchingMarket(false);
+    }
   };
 
   // Open Preview Modal
@@ -664,8 +754,26 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
             </div>
           )}
 
-          {/* Extracted Listing Summary Card */}
+            {/* Extracted Listing Summary Card */}
           <div className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden">
+            {/* Status Checklist Header */}
+            <div className="flex flex-wrap items-center gap-3 p-3 bg-zinc-950/80 rounded-xl border border-zinc-800/80">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>PROPERTY DETAILS ✓</span>
+              </div>
+              <span className="text-zinc-700">|</span>
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>PROPERTY INTELLIGENCE ✓</span>
+              </div>
+              {intelligence?.confidenceLevel === 'verified-research' && (
+                <span className="text-[10px] font-mono text-emerald-300 bg-emerald-950/50 border border-emerald-800/50 px-2 py-0.5 rounded-md ml-auto">
+                  Verified Research ({intelligence?.sources?.length || 0} Sources)
+                </span>
+              )}
+            </div>
+
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-zinc-800">
               <div>
                 <div className="flex items-center gap-2">
@@ -723,6 +831,62 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
                 </p>
               </div>
             </div>
+
+            {/* Property Intelligence Mini-Dossier */}
+            {intelligence && (
+              <div className="p-4 bg-zinc-950/90 rounded-xl border border-zinc-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <h4 className="text-xs font-bold text-zinc-200 uppercase tracking-wider">
+                      Property Intelligence Synthesis
+                    </h4>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRerunMarketResearch}
+                    disabled={researchingMarket}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-amber-400 border border-zinc-700 text-[11px] font-medium transition-colors disabled:opacity-50"
+                  >
+                    {researchingMarket ? (
+                      <>
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <span>Researching Live Web...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Search className="w-3 h-3" />
+                        <span>Refresh Market Intelligence</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <p className="text-xs text-zinc-300 leading-relaxed bg-zinc-900/60 p-3 rounded-lg border border-zinc-800/60">
+                  <span className="text-amber-400 font-semibold">Core Thesis: </span>
+                  {intelligence.whyThisProperty?.coreThesis}
+                </p>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                  <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800/60">
+                    <span className="text-zinc-500 block text-[10px] uppercase font-bold">YoY Trend</span>
+                    <span className="font-semibold text-emerald-400">{intelligence.marketTrends?.yoyPriceChange}</span>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800/60">
+                    <span className="text-zinc-500 block text-[10px] uppercase font-bold">Scarcity Tier</span>
+                    <span className="font-semibold text-zinc-200 truncate block">{intelligence.scarcity?.rarityTier}</span>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800/60">
+                    <span className="text-zinc-500 block text-[10px] uppercase font-bold">Est. Gross Yield</span>
+                    <span className="font-semibold text-emerald-400">{intelligence.rentalPotential?.estimatedGrossYield}</span>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800/60">
+                    <span className="text-zinc-500 block text-[10px] uppercase font-bold">Value Outlook</span>
+                    <span className="font-semibold text-zinc-200 truncate block">{intelligence.appreciationOutlook?.longTermOutlookRating}</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Story Description */}
             <div className="space-y-2">

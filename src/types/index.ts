@@ -46,6 +46,8 @@ export interface PropertyImage {
   order: number;
 }
 
+export * from './intelligence';
+
 export interface PropertyListing {
   id: string;
   slug: string;
@@ -63,6 +65,7 @@ export interface PropertyListing {
   status: 'draft' | 'published' | 'archived';
   seoTitle?: string;
   metaDescription?: string;
+  intelligence?: import('./intelligence').PropertyIntelligenceData;
   // Optional Walkthrough Video Fields
   walkthrough_video_url?: string | null;
   walkthrough_video_type?: string | null;

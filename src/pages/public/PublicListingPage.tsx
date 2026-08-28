@@ -18,6 +18,7 @@ import { PropertyExperience } from '../../components/public/PropertyExperience';
 import { PropertyStory } from '../../components/public/PropertyStory';
 import { WalkthroughVideoSection } from '../../components/public/WalkthroughVideoSection';
 import { GalleryGrid } from '../../components/public/GalleryGrid';
+import { PropertyIntelligenceSection } from '../../components/public/PropertyIntelligenceSection';
 import { LocationMap } from '../../components/public/LocationMap';
 import { StickyActionBar } from '../../components/public/StickyActionBar';
 import { ImageLightboxModal } from '../../components/public/ImageLightboxModal';
@@ -222,8 +223,14 @@ export const PublicListingPage: React.FC = () => {
             images={listing.images || []}
             onOpenLightbox={handleOpenLightbox}
           />
+        </div>
 
-          {/* 9. Location & Google Maps */}
+        {/* 9. Property Intelligence Section (9-Card Insight Matrix & Report Modal) */}
+        <PropertyIntelligenceSection listing={listing} />
+
+        {/* Content Layout Container (Location & Context) */}
+        <div className="max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-8 lg:px-12 pb-20 sm:pb-24 space-y-8 sm:space-y-12">
+          {/* 10. Location & Google Maps */}
           <LocationMap location={listing.location} />
         </div>
 

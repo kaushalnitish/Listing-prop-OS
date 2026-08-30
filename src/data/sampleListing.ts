@@ -226,12 +226,6 @@ The upper level houses an ultra-private master suite with dual walk-in dressing 
       order: 6,
     },
   ],
-  walkthrough_video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-  walkthrough_video_type: 'direct',
-  walkthrough_video_thumbnail: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1600&q=80',
-  walkthroughVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-  walkthroughVideoType: 'direct',
-  walkthroughVideoThumbnail: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1600&q=80',
   contact: {
     agentName: 'Rohit Singhania',
     agentRole: 'Senior Coastal Estates Advisor',

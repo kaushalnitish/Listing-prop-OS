@@ -8,7 +8,6 @@ import { generatePropertyIntelligence } from '../../lib/propertyIntelligence';
 import { ImageUploader } from './ImageUploader';
 import { AmenitiesSelector } from './AmenitiesSelector';
 import { ListingPreviewModal } from './ListingPreviewModal';
-import { WalkthroughVideoUploader } from './WalkthroughVideoUploader';
 import {
   Building2,
   DollarSign,
@@ -37,6 +36,7 @@ import {
   Edit3,
   ChevronDown,
   ChevronUp,
+  X,
 } from 'lucide-react';
 
 interface PropertyFormProps {
@@ -77,6 +77,9 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewListing, setPreviewListing] = useState<PropertyListing | null>(null);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [savingStatusText, setSavingStatusText] = useState<string>('Saving...');
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Listing Form Fields
   const [title, setTitle] = useState(initialData?.title || '');
@@ -129,17 +132,8 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
   const [seoTitle, setSeoTitle] = useState(initialData?.seoTitle || '');
   const [metaDescription, setMetaDescription] = useState(initialData?.metaDescription || '');
 
-  // Images & Walkthrough Video
+  // Images
   const [images, setImages] = useState(initialData?.images || []);
-  const [walkthroughVideoUrl, setWalkthroughVideoUrl] = useState<string | null>(
-    initialData?.walkthrough_video_url || (initialData as any)?.walkthroughVideoUrl || null
-  );
-  const [walkthroughVideoType, setWalkthroughVideoType] = useState<string | null>(
-    initialData?.walkthrough_video_type || (initialData as any)?.walkthroughVideoType || 'video/mp4'
-  );
-  const [walkthroughVideoThumbnail, setWalkthroughVideoThumbnail] = useState<string | null>(
-    initialData?.walkthrough_video_thumbnail || (initialData as any)?.walkthroughVideoThumbnail || null
-  );
 
   // Contact
   const [agentName, setAgentName] = useState(
@@ -340,12 +334,6 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
       highlights: highlights.filter((h) => h.trim() !== ''),
       amenities: amenities.length > 0 ? amenities : ['Gated Society', '45ft RCC Roads', '5 Years Warranty'],
       images,
-      walkthrough_video_url: walkthroughVideoUrl || null,
-      walkthrough_video_type: walkthroughVideoType || null,
-      walkthrough_video_thumbnail: walkthroughVideoThumbnail || null,
-      walkthroughVideoUrl: walkthroughVideoUrl || null,
-      walkthroughVideoType: walkthroughVideoType || null,
-      walkthroughVideoThumbnail: walkthroughVideoThumbnail || null,
       contact: {
         agentName: agentName.trim(),
         agentRole: agentRole.trim(),
@@ -390,6 +378,8 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
 
   // Open Preview Modal
   const handleGeneratePreview = () => {
+    setFormError(null);
+    setPublishError(null);
     const draftListing = buildListingObject('draft');
     setPreviewListing(draftListing);
     setIsPreviewOpen(true);
@@ -398,14 +388,15 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
   // Save Draft
   const handleSaveDraft = async () => {
     setSaving(true);
+    setFormError(null);
+    setSavingStatusText('Saving draft...');
     try {
       const draftListing = buildListingObject('draft');
       await saveListing(draftListing);
-      alert('Listing saved as Draft successfully!');
       navigate('/admin');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving draft:', err);
-      alert('Failed to save draft.');
+      setFormError(err?.message || 'Failed to save draft.');
     } finally {
       setSaving(false);
     }
@@ -414,15 +405,16 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
   const handleSaveDraftFromPreview = async () => {
     if (!previewListing) return;
     setSaving(true);
+    setPublishError(null);
+    setSavingStatusText('Saving draft...');
     try {
       const draftData = { ...previewListing, status: 'draft' as const };
       await saveListing(draftData);
-      alert('Listing saved as Draft!');
       setIsPreviewOpen(false);
       navigate('/admin');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving draft:', err);
-      alert('Failed to save draft.');
+      setPublishError(err?.message || 'Failed to save draft.');
     } finally {
       setSaving(false);
     }
@@ -431,6 +423,8 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
   const handlePublishFromPreview = async () => {
     if (!previewListing) return;
     setSaving(true);
+    setPublishError(null);
+    setSavingStatusText('Publishing listing to live database...');
     try {
       const publishedListing: PropertyListing = {
         ...previewListing,
@@ -443,9 +437,9 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
 
       setPublishedUrl(url);
       setPreviewListing(saved);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error publishing listing:', err);
-      alert('Failed to publish listing.');
+      setPublishError(err?.message || 'Failed to publish listing.');
     } finally {
       setSaving(false);
     }
@@ -481,7 +475,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
               <div className="text-center sm:text-left">
                 <p className="text-xs font-bold leading-none">Photos</p>
                 <p className="text-[11px] text-zinc-500 mt-1 hidden sm:block">
-                  {images.length > 0 ? `${images.length} selected` : 'Upload property media'}
+                  {images.length > 0 ? `${images.length} selected` : 'Upload property photos'}
                 </p>
               </div>
             </button>
@@ -570,20 +564,6 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
             onChange={(newImages) => setImages(newImages)}
             maxImages={20}
           />
-
-          <div className="pt-6 border-t border-zinc-800/80">
-            <WalkthroughVideoUploader
-              videoUrl={walkthroughVideoUrl}
-              videoType={walkthroughVideoType}
-              thumbnailUrl={walkthroughVideoThumbnail}
-              listingId={initialData?.id}
-              onChange={(url, type, thumb) => {
-                setWalkthroughVideoUrl(url);
-                setWalkthroughVideoType(type || 'video/mp4');
-                setWalkthroughVideoThumbnail(thumb || null);
-              }}
-            />
-          </div>
 
           <div className="pt-4 border-t border-zinc-800/80 flex items-center justify-between">
             <p className="text-xs text-zinc-500">
@@ -1328,6 +1308,24 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
         </div>
       )}
 
+      {/* Form Error Banner */}
+      {formError && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex items-start gap-3.5 animate-in fade-in">
+          <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+          <div className="flex-1 space-y-1">
+            <h4 className="text-sm font-bold text-red-300">Action Failed</h4>
+            <p className="text-xs text-red-200/80 leading-relaxed">{formError}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFormError(null)}
+            className="text-red-400 hover:text-red-200 transition-colors p-1"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Preview Modal Screen */}
       {isPreviewOpen && previewListing && (
         <ListingPreviewModal
@@ -1337,6 +1335,9 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
           onPublish={handlePublishFromPreview}
           saving={saving}
           publishedUrl={publishedUrl}
+          publishError={publishError}
+          onClearPublishError={() => setPublishError(null)}
+          savingStatusText={savingStatusText}
           onCloseSuccessModal={() => {
             setPublishedUrl(null);
             setIsPreviewOpen(false);

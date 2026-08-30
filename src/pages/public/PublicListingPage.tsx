@@ -16,7 +16,6 @@ import { PropertySpecs } from '../../components/public/PropertySpecs';
 import { PropertyHighlightsBand } from '../../components/public/PropertyHighlightsBand';
 import { PropertyExperience } from '../../components/public/PropertyExperience';
 import { PropertyStory } from '../../components/public/PropertyStory';
-import { WalkthroughVideoSection } from '../../components/public/WalkthroughVideoSection';
 import { GalleryGrid } from '../../components/public/GalleryGrid';
 import { PropertyIntelligenceSection } from '../../components/public/PropertyIntelligenceSection';
 import { LocationMap } from '../../components/public/LocationMap';
@@ -210,15 +209,7 @@ export const PublicListingPage: React.FC = () => {
             amenities={listing.amenities}
           />
 
-          {/* 7. Property Walkthrough Video (Rendered only if video exists) */}
-          <WalkthroughVideoSection
-            videoUrl={listing.walkthrough_video_url || (listing as any).walkthroughVideoUrl}
-            videoType={listing.walkthrough_video_type || (listing as any).walkthroughVideoType}
-            thumbnailUrl={listing.walkthrough_video_thumbnail || (listing as any).walkthroughVideoThumbnail}
-            title={listing.title}
-          />
-
-          {/* 8. Photo Gallery Grid */}
+          {/* 7. Photo Gallery Grid */}
           <GalleryGrid
             images={listing.images || []}
             onOpenLightbox={handleOpenLightbox}

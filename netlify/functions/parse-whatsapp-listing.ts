@@ -1,9 +1,21 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 export const handler = async (event: any) => {
+  const headers = {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
+
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 200, headers, body: "" };
+  }
+
   if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,
+      headers,
       body: JSON.stringify({ error: "Method Not Allowed" }),
     };
   }
@@ -13,15 +25,17 @@ export const handler = async (event: any) => {
     if (!rawText || !rawText.trim()) {
       return {
         statusCode: 400,
+        headers,
         body: JSON.stringify({ success: false, error: "Please provide property text to parse." }),
       };
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
     if (!apiKey) {
       return {
         statusCode: 500,
-        body: JSON.stringify({ success: false, error: "GEMINI_API_KEY is missing." }),
+        headers,
+        body: JSON.stringify({ success: false, error: "GEMINI_API_KEY is not configured in Netlify environment variables." }),
       };
     }
 
@@ -51,7 +65,7 @@ INSTRUCTIONS & CONVERSIONS:
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         systemInstruction:
@@ -111,14 +125,14 @@ INSTRUCTIONS & CONVERSIONS:
 
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ success: true, data: parsedData }),
     };
   } catch (err: any) {
-    console.error("Error in Netlify function:", err);
+    console.error("Error in Netlify parse-whatsapp function:", err);
     return {
       statusCode: 500,
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ success: false, error: err.message || "Failed to parse property text using AI." }),
     };
   }

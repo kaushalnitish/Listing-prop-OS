@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS public.listings (
   walkthrough_video_url TEXT,
   walkthrough_video_type TEXT,
   walkthrough_video_thumbnail TEXT,
+  intelligence JSONB,
   previous_slugs JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -31,7 +32,9 @@ CREATE TABLE IF NOT EXISTS public.listings (
 ALTER TABLE public.listings
 ADD COLUMN IF NOT EXISTS walkthrough_video_url TEXT NULL,
 ADD COLUMN IF NOT EXISTS walkthrough_video_type TEXT NULL,
-ADD COLUMN IF NOT EXISTS walkthrough_video_thumbnail TEXT NULL;
+ADD COLUMN IF NOT EXISTS walkthrough_video_thumbnail TEXT NULL,
+ADD COLUMN IF NOT EXISTS intelligence JSONB NULL,
+ADD COLUMN IF NOT EXISTS previous_slugs JSONB DEFAULT '[]'::jsonb;
 
 -- Indexes for high-performance lookups
 CREATE INDEX IF NOT EXISTS idx_listings_slug ON public.listings(slug);
@@ -40,7 +43,7 @@ CREATE INDEX IF NOT EXISTS idx_listings_status ON public.listings(status);
 -- 2. Enable Row Level Security (RLS)
 ALTER TABLE public.listings ENABLE ROW LEVEL SECURITY;
 
--- Drop existing policies if any
+-- Drop insecure / legacy policies if any
 DROP POLICY IF EXISTS "Allow public read access for published listings" ON public.listings;
 DROP POLICY IF EXISTS "Allow full access for authenticated admin users" ON public.listings;
 DROP POLICY IF EXISTS "Allow public select for all listings" ON public.listings;
@@ -48,29 +51,19 @@ DROP POLICY IF EXISTS "Allow public insert for listings" ON public.listings;
 DROP POLICY IF EXISTS "Allow public update for listings" ON public.listings;
 DROP POLICY IF EXISTS "Allow public delete for listings" ON public.listings;
 
--- RLS Policies for Application Access
-CREATE POLICY "Allow public select for all listings"
+-- SECURE RLS POLICIES FOR PRODUCTION:
+-- 1. Public / Browser Client can ONLY read published listings.
+CREATE POLICY "Allow public read access for published listings"
 ON public.listings
 FOR SELECT
-USING (true);
+USING (status = 'published');
 
-CREATE POLICY "Allow public insert for listings"
-ON public.listings
-FOR INSERT
-WITH CHECK (true);
+-- 2. No public INSERT, UPDATE, or DELETE policies exist.
+-- All administrative mutations (create, update, delete) MUST execute via 
+-- secure Netlify Functions using the SUPABASE_SERVICE_ROLE_KEY, which 
+-- automatically and securely bypasses RLS server-side.
 
-CREATE POLICY "Allow public update for listings"
-ON public.listings
-FOR UPDATE
-USING (true)
-WITH CHECK (true);
-
-CREATE POLICY "Allow public delete for listings"
-ON public.listings
-FOR DELETE
-USING (true);
-
--- 3. Storage Bucket for Property Images & Walkthrough Videos
+-- 3. Storage Bucket Configuration for Property Media
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('property-images', 'property-images', true)
 ON CONFLICT (id) DO NOTHING;
@@ -79,7 +72,7 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('property-walkthroughs', 'property-walkthroughs', true)
 ON CONFLICT (id) DO NOTHING;
 
--- Storage RLS Policies
+-- Storage RLS: Public can view images/videos; writes are performed server-side via Service Role Key
 DROP POLICY IF EXISTS "Public Read Storage" ON storage.objects;
 DROP POLICY IF EXISTS "Admin Upload Storage" ON storage.objects;
 DROP POLICY IF EXISTS "Public Storage Upload" ON storage.objects;
@@ -89,10 +82,6 @@ DROP POLICY IF EXISTS "Public Video Storage Upload" ON storage.objects;
 CREATE POLICY "Public Read Storage"
 ON storage.objects FOR SELECT
 USING (bucket_id = 'property-images' OR bucket_id = 'property-walkthroughs');
-
-CREATE POLICY "Public Storage Upload"
-ON storage.objects FOR INSERT
-WITH CHECK (bucket_id = 'property-images' OR bucket_id = 'property-walkthroughs');
 
 -- 4. Seed Initial Listing (listing-1786193079827)
 INSERT INTO public.listings (

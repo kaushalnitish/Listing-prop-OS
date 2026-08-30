@@ -63,51 +63,6 @@ async function uploadBufferToSupabase(buffer: Buffer, fileName: string, mimeType
   return null;
 }
 
-async function uploadVideoBufferToSupabase(
-  buffer: Buffer,
-  fileName: string,
-  mimeType: string = "video/mp4",
-  listingId?: string
-): Promise<string | null> {
-  if (!supabaseServer) return null;
-  try {
-    const folder = listingId ? `walkthroughs/${listingId}` : "walkthroughs";
-    const filePath = `${folder}/${fileName}`;
-    const { error: uploadErr } = await supabaseServer.storage
-      .from("property-walkthroughs")
-      .upload(filePath, buffer, {
-        contentType: mimeType,
-        upsert: true,
-      });
-
-    if (uploadErr) {
-      console.warn("Supabase Walkthrough Storage upload warning on server:", uploadErr.message);
-      if (uploadErr.message?.includes("not found") || uploadErr.message?.includes("Bucket")) {
-        try {
-          await supabaseServer.storage.createBucket("property-walkthroughs", { public: true });
-          const { error: retryErr } = await supabaseServer.storage
-            .from("property-walkthroughs")
-            .upload(filePath, buffer, { contentType: mimeType, upsert: true });
-          if (retryErr) console.warn("Supabase retry video upload error:", retryErr.message);
-        } catch (bErr) {
-          console.warn("Bucket creation error:", bErr);
-        }
-      }
-    }
-
-    const { data } = supabaseServer.storage
-      .from("property-walkthroughs")
-      .getPublicUrl(filePath);
-
-    if (data?.publicUrl) {
-      return data.publicUrl;
-    }
-  } catch (err) {
-    console.error("Error uploading video buffer to Supabase Storage:", err);
-  }
-  return null;
-}
-
 async function startServer() {
   const app = express();
   app.use((req, res, next) => {
@@ -1085,93 +1040,6 @@ Return valid JSON with:
     }
   });
 
-  // Walkthrough Video Upload API Route
-  app.post("/api/upload-video", async (req, res) => {
-    try {
-      const { video, name, mimeType = "video/mp4", listingId } = req.body;
-      if (!video) {
-        return res.status(400).json({ success: false, error: "No video data provided" });
-      }
-
-      let buffer: Buffer;
-      let resolvedMime = mimeType;
-      let ext = "mp4";
-
-      if (video.startsWith("data:")) {
-        const matches = video.match(/^data:(video\/[a-zA-Z0-9.\-_+]+);base64,(.+)$/);
-        if (matches) {
-          resolvedMime = matches[1];
-          const subType = resolvedMime.split("/")[1] || "mp4";
-          ext = subType === "quicktime" ? "mov" : subType;
-          buffer = Buffer.from(matches[2], "base64");
-        } else {
-          const parts = video.split(",");
-          buffer = Buffer.from(parts[1] || parts[0], "base64");
-        }
-      } else {
-        buffer = Buffer.from(video, "base64");
-      }
-
-      // Size limit verification: 100 MB max
-      const MAX_SIZE_BYTES = 100 * 1024 * 1024;
-      if (buffer.length > MAX_SIZE_BYTES) {
-        return res.status(400).json({
-          success: false,
-          error: "Video file size exceeds maximum limit of 100MB.",
-        });
-      }
-
-      if (name && name.includes(".")) {
-        const parsedExt = name.split(".").pop()?.toLowerCase();
-        if (parsedExt) ext = parsedExt;
-      }
-
-      const fileName = `walkthrough-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
-
-      // Upload to Supabase Storage property-walkthroughs bucket
-      const supabaseUrl = await uploadVideoBufferToSupabase(buffer, fileName, resolvedMime, listingId);
-      if (supabaseUrl) {
-        return res.json({
-          success: true,
-          url: supabaseUrl,
-          type: resolvedMime,
-          fileName,
-        });
-      }
-
-      return res.status(500).json({
-        success: false,
-        error: "Supabase Storage upload failed for walkthrough video. Please ensure Supabase credentials and property-walkthroughs bucket are configured.",
-      });
-    } catch (err: any) {
-      console.error("Error in /api/upload-video:", err);
-      return res.status(500).json({ success: false, error: err?.message || "Failed to upload video" });
-    }
-  });
-
-  // Walkthrough Video Delete API Route
-  app.post("/api/delete-video", async (req, res) => {
-    try {
-      const { url } = req.body;
-      if (!url || !supabaseServer) {
-        return res.json({ success: true, message: "No action required" });
-      }
-
-      // Extract file path from Supabase public URL
-      const bucketIdentifier = "/property-walkthroughs/";
-      if (url.includes(bucketIdentifier)) {
-        const filePath = url.split(bucketIdentifier)[1];
-        if (filePath) {
-          await supabaseServer.storage.from("property-walkthroughs").remove([filePath]);
-        }
-      }
-      return res.json({ success: true });
-    } catch (err: any) {
-      console.warn("Warning deleting video from Supabase:", err);
-      return res.json({ success: false, error: err?.message });
-    }
-  });
-
 function toDbRow(listing: any) {
   const now = new Date().toISOString();
   return {
@@ -1192,7 +1060,6 @@ function toDbRow(listing: any) {
     seo_title: listing.seoTitle || listing.seo_title || null,
     meta_description: listing.metaDescription || listing.meta_description || null,
     intelligence: listing.intelligence || null,
-    walkthrough_video_url: listing.walkthrough_video_url || listing.walkthroughVideoUrl || null,
     previous_slugs: Array.isArray(listing.previousSlugs) ? listing.previousSlugs : (Array.isArray(listing.previous_slugs) ? listing.previous_slugs : []),
     created_at: listing.createdAt || listing.created_at || now,
     updated_at: listing.updatedAt || listing.updated_at || now,
@@ -1201,18 +1068,6 @@ function toDbRow(listing: any) {
 
 function fromDbRow(row: any): any {
   const now = new Date().toISOString();
-  const videoUrl = row.walkthrough_video_url || row.walkthroughVideoUrl || null;
-  const videoType =
-    row.walkthrough_video_type ||
-    row.walkthroughVideoType ||
-    (videoUrl
-      ? videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')
-        ? 'youtube'
-        : videoUrl.includes('vimeo.com')
-        ? 'vimeo'
-        : 'direct'
-      : null);
-  const videoThumb = row.walkthrough_video_thumbnail || row.walkthroughVideoThumbnail || null;
 
   return {
     id: String(row.id),
@@ -1243,12 +1098,6 @@ function fromDbRow(row: any): any {
             }
           })()
         : undefined,
-    walkthrough_video_url: videoUrl,
-    walkthrough_video_type: videoType,
-    walkthrough_video_thumbnail: videoThumb,
-    walkthroughVideoUrl: videoUrl,
-    walkthroughVideoType: videoType,
-    walkthroughVideoThumbnail: videoThumb,
     previousSlugs: Array.isArray(row.previous_slugs) ? row.previous_slugs : (Array.isArray(row.previousSlugs) ? row.previousSlugs : []),
     createdAt: row.created_at || row.createdAt || now,
     updatedAt: row.updated_at || row.updatedAt || now,

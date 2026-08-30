@@ -66,13 +66,6 @@ export interface PropertyListing {
   seoTitle?: string;
   metaDescription?: string;
   intelligence?: import('./intelligence').PropertyIntelligenceData;
-  // Optional Walkthrough Video Fields
-  walkthrough_video_url?: string | null;
-  walkthrough_video_type?: string | null;
-  walkthrough_video_thumbnail?: string | null;
-  walkthroughVideoUrl?: string | null;
-  walkthroughVideoType?: string | null;
-  walkthroughVideoThumbnail?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -84,3 +77,25 @@ export interface AuthState {
     email: string;
   } | null;
 }
+
+export type OperationType =
+  | 'image_upload'
+  | 'database_save'
+  | 'database_delete'
+  | 'database_read'
+  | 'ai_enrichment'
+  | 'server_configuration'
+  | 'authentication'
+  | 'validation'
+  | 'storage_cleanup'
+  | 'unknown';
+
+export interface ApiOperationError {
+  success: false;
+  operation: OperationType;
+  status?: number;
+  code?: string;
+  message: string;
+  details?: string;
+}
+

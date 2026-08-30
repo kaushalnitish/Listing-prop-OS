@@ -6,7 +6,6 @@ import { PropertySpecs } from '../public/PropertySpecs';
 import { PropertyHighlightsBand } from '../public/PropertyHighlightsBand';
 import { PropertyExperience } from '../public/PropertyExperience';
 import { PropertyStory } from '../public/PropertyStory';
-import { WalkthroughVideoSection } from '../public/WalkthroughVideoSection';
 import { GalleryGrid } from '../public/GalleryGrid';
 import { LocationMap } from '../public/LocationMap';
 import { StickyActionBar } from '../public/StickyActionBar';
@@ -20,6 +19,9 @@ import {
   ExternalLink,
   Eye,
   X,
+  AlertTriangle,
+  RefreshCw,
+  Loader2,
 } from 'lucide-react';
 
 interface ListingPreviewModalProps {
@@ -30,6 +32,9 @@ interface ListingPreviewModalProps {
   saving: boolean;
   publishedUrl?: string | null;
   onCloseSuccessModal?: () => void;
+  publishError?: string | null;
+  onClearPublishError?: () => void;
+  savingStatusText?: string;
 }
 
 export const ListingPreviewModal: React.FC<ListingPreviewModalProps> = ({
@@ -40,6 +45,9 @@ export const ListingPreviewModal: React.FC<ListingPreviewModalProps> = ({
   saving,
   publishedUrl,
   onCloseSuccessModal,
+  publishError,
+  onClearPublishError,
+  savingStatusText,
 }) => {
   const navigate = useNavigate();
 
@@ -107,10 +115,19 @@ export const ListingPreviewModal: React.FC<ListingPreviewModalProps> = ({
             type="button"
             onClick={onPublish}
             disabled={saving}
-            className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center gap-1 sm:gap-1.5 transition-all shadow-lg shadow-amber-500/20 disabled:opacity-50"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center gap-1.5 sm:gap-2 transition-all shadow-lg shadow-amber-500/20 disabled:opacity-60"
           >
-            <Globe className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
-            <span>{saving ? 'Publishing...' : 'Publish'}</span>
+            {saving ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 stroke-[2.5] shrink-0 animate-spin" />
+                <span>{savingStatusText || 'Publishing...'}</span>
+              </>
+            ) : (
+              <>
+                <Globe className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+                <span>Publish</span>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -161,14 +178,6 @@ export const ListingPreviewModal: React.FC<ListingPreviewModalProps> = ({
             description={listing.description}
             highlights={listing.highlights}
             amenities={listing.amenities}
-          />
-
-          {/* Walkthrough Video (Rendered only if video exists) */}
-          <WalkthroughVideoSection
-            videoUrl={listing.walkthrough_video_url || (listing as any).walkthroughVideoUrl}
-            videoType={listing.walkthrough_video_type || (listing as any).walkthroughVideoType}
-            thumbnailUrl={listing.walkthrough_video_thumbnail || (listing as any).walkthroughVideoThumbnail}
-            title={listing.title}
           />
 
           <GalleryGrid
@@ -256,6 +265,99 @@ export const ListingPreviewModal: React.FC<ListingPreviewModalProps> = ({
                 <Eye className="w-3.5 h-3.5" />
                 <span>View Live Page</span>
               </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Publish / Save Error Diagnostic Modal */}
+      {publishError && (
+        <div className="fixed inset-0 z-50 bg-zinc-950/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-zinc-900 border border-red-500/30 rounded-2xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            {onClearPublishError && (
+              <button
+                onClick={onClearPublishError}
+                className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-200 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-zinc-100">
+                  Publishing Encountered an Issue
+                </h3>
+                <p className="text-xs text-zinc-400">
+                  The listing could not be published to the live server.
+                </p>
+              </div>
+            </div>
+
+            {/* Error Description Box */}
+            <div className="bg-zinc-950/90 border border-zinc-800 rounded-xl p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-red-400 font-semibold block">
+                  Diagnostic Information:
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-red-500/10 text-red-300 border border-red-500/20">
+                  {publishError.includes('Image upload') || publishError.includes('photo')
+                    ? 'Image Upload Failed'
+                    : publishError.includes('SERVICE_ROLE_KEY')
+                    ? 'Server Config: Missing Service Key'
+                    : publishError.includes('Database') || publishError.includes('Supabase')
+                    ? 'Database Save Failed'
+                    : publishError.includes('Gemini') || publishError.includes('UNAVAILABLE')
+                    ? 'AI Service Unavailable'
+                    : 'Publishing Error'}
+                </span>
+              </div>
+              <p className="text-xs text-zinc-300 font-mono break-words leading-relaxed whitespace-pre-wrap">
+                {publishError}
+              </p>
+            </div>
+
+            {/* Actionable Guidance */}
+            <div className="text-[11px] text-zinc-400 bg-zinc-800/40 rounded-xl p-3 border border-zinc-800 space-y-1">
+              <span className="font-semibold text-zinc-300 block">Troubleshooting Guidance:</span>
+              {publishError.includes('SERVICE_ROLE_KEY') ? (
+                <p>Add <code className="text-amber-300 font-mono">SUPABASE_SERVICE_ROLE_KEY</code> in Netlify Site Configuration → Environment Variables to allow secure server-side mutations.</p>
+              ) : publishError.includes('Image upload') ? (
+                <p>Check the image size and format. Ensure the Netlify serverless function can connect to Supabase Storage.</p>
+              ) : publishError.includes('UNAVAILABLE') || publishError.includes('Gemini') ? (
+                <p>The AI service experienced a temporary network blip or rate limit. Retrying will typically resolve this instantly.</p>
+              ) : publishError.includes('Supabase') || publishError.includes('Database') || publishError.includes('relation') ? (
+                <p>Verify that your Supabase project is active and that <code className="text-amber-300 font-mono">supabase-schema.sql</code> has been run in the Supabase SQL Editor.</p>
+              ) : (
+                <p>Check your internet connection and ensure all required fields and photos are valid.</p>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-3 pt-1">
+              <button
+                type="button"
+                onClick={onBackToEdit}
+                className="flex-1 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold text-center transition-colors flex items-center justify-center gap-1.5"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Back to Edit</span>
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (onClearPublishError) onClearPublishError();
+                  await onPublish();
+                }}
+                disabled={saving}
+                className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs text-center flex items-center justify-center gap-1.5 transition-colors disabled:opacity-60"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Try Again</span>
+              </button>
             </div>
           </div>
         </div>

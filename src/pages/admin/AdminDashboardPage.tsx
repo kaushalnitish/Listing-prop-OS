@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AdminLayout } from '../../components/layout/AdminLayout';
 import {
   Plus,
@@ -23,18 +23,29 @@ import {
   Sparkles,
   Loader2,
   Globe,
+  Layers,
+  Compass,
+  ArrowRight,
+  Share2,
+  Check,
 } from 'lucide-react';
 import { getListings, saveListing, deleteListing } from '../../lib/storage';
+import { getPortfolios, deletePortfolio } from '../../lib/portfolioStorage';
 import { researchPropertyIntelligenceWithAi } from '../../lib/aiParser';
-import { PropertyListing } from '../../types';
+import { PropertyListing, CreatorProfile } from '../../types';
 
 export const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') === 'portfolios' ? 'portfolios' : 'listings';
+
   const [listings, setListings] = useState<PropertyListing[]>([]);
+  const [portfolios, setPortfolios] = useState<CreatorProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Toast Notification state
-  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'info'; message: string } | null>(null);
+  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'info' | 'error'; message: string } | null>(null);
 
   // Auto dismiss toast after 5 seconds
   useEffect(() => {
@@ -52,22 +63,27 @@ export const AdminDashboardPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'price-low' | 'price-high' | 'title'>('newest');
   const [refreshingIntelId, setRefreshingIntelId] = useState<string | null>(null);
 
-  const fetchListingsData = async () => {
+  const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const data = await getListings();
-      setListings(data);
+      const [listingsData, portfoliosData] = await Promise.all([
+        getListings().catch(() => []),
+        getPortfolios().catch(() => []),
+      ]);
+      setListings(listingsData);
+      setPortfolios(portfoliosData);
     } catch (err: any) {
-      console.error('Failed to fetch listings:', err);
+      console.error('Failed to fetch dashboard data:', err);
       setToastMessage({
         type: 'error',
-        message: err.message || 'Failed to load listings from database.',
+        message: err.message || 'Failed to load data from database.',
       });
-      setListings([]);
     } finally {
       setLoading(false);
     }
   };
+
+  const fetchListingsData = fetchDashboardData;
 
   const handleRefreshIntelligence = async (listing: PropertyListing) => {
     setRefreshingIntelId(listing.id);
@@ -263,9 +279,360 @@ export const AdminDashboardPage: React.FC = () => {
     }
   };
 
+  // Delete portfolio state
+  const [portfolioToDelete, setPortfolioToDelete] = useState<CreatorProfile | null>(null);
+  const [isDeletingPortfolio, setIsDeletingPortfolio] = useState(false);
+
+  const confirmDeletePortfolio = async () => {
+    if (!portfolioToDelete) return;
+    setIsDeletingPortfolio(true);
+    try {
+      await deletePortfolio(portfolioToDelete.id);
+      await fetchDashboardData();
+      setToastMessage({
+        type: 'info',
+        message: 'Creator portfolio deleted.',
+      });
+    } catch (err: any) {
+      setToastMessage({
+        type: 'error',
+        message: 'Failed to delete creator portfolio.',
+      });
+    } finally {
+      setIsDeletingPortfolio(false);
+      setPortfolioToDelete(null);
+    }
+  };
+
+  const copyPortfolioUrl = (slug: string, id: string) => {
+    const url = `${window.location.origin}/portfolio/${slug}`;
+    navigator.clipboard.writeText(url);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2500);
+    setToastMessage({
+      type: 'success',
+      message: 'Public portfolio link copied to clipboard!',
+    });
+  };
+
+  // Filtered portfolios
+  const filteredPortfolios = useMemo(() => {
+    return portfolios.filter((p) => {
+      const q = searchQuery.toLowerCase().trim();
+      if (!q) return true;
+      return (
+        p.identity.name.toLowerCase().includes(q) ||
+        p.identity.niche.toLowerCase().includes(q) ||
+        p.identity.tagline.toLowerCase().includes(q) ||
+        p.slug.toLowerCase().includes(q)
+      );
+    });
+  }, [portfolios, searchQuery]);
+
   return (
     <AdminLayout>
       <div className="space-y-6">
+        {/* Unified Dual Engine Switcher Banner */}
+        <div className="bg-stone-900 text-white rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white shrink-0">
+              <Layers className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">Listing OS</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-800 text-stone-300 font-semibold">Dual Platform</span>
+              </div>
+              <h2 className="text-sm sm:text-base font-bold text-white">Unified Asset & Portfolio Management</h2>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="flex items-center bg-stone-800 p-1 rounded-xl border border-stone-700/60">
+              <button
+                type="button"
+                onClick={() => setSearchParams({ tab: 'listings' })}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'listings'
+                    ? 'bg-amber-500 text-stone-950 shadow-xs'
+                    : 'text-stone-300 hover:text-white'
+                }`}
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>Property Listings ({listings.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSearchParams({ tab: 'portfolios' })}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'portfolios'
+                    ? 'bg-sky-400 text-stone-950 shadow-xs'
+                    : 'text-stone-300 hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Creator Portfolios ({portfolios.length})</span>
+              </button>
+            </div>
+
+            <Link
+              to="/select"
+              className="px-3 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-medium transition-colors hidden md:flex items-center gap-1.5 shrink-0"
+              title="Switch creation service hub"
+            >
+              <span>Service Hub</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+
+        {/* =========================================================================
+            VIEW 1: CREATOR PORTFOLIOS TAB
+            ========================================================================= */}
+        {activeTab === 'portfolios' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-900">
+                  Creator Portfolios
+                </h1>
+                <p className="text-xs sm:text-sm text-stone-500 mt-1 font-normal">
+                  Manage bespoke digital portfolios, commercial services, and public live URLs for creative talent.
+                </p>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <Link
+                  to="/portfolio/rishika-kapoor"
+                  target="_blank"
+                  className="inline-flex items-center justify-center gap-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-200 px-3.5 py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Sample Portfolio</span>
+                </Link>
+
+                <Link
+                  to="/portfolio/create"
+                  className="inline-flex items-center justify-center gap-2 bg-stone-900 hover:bg-stone-800 text-white px-4 py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all shadow-2xs shrink-0"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create Creator Portfolio</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Portfolios Search Bar */}
+            <div className="bg-white border border-stone-200/80 rounded-2xl p-3 sm:p-4 shadow-2xs flex items-center justify-between gap-3">
+              <div className="relative w-full sm:w-96">
+                <input
+                  type="text"
+                  placeholder="Search creator by name, niche or handle..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-stone-50/80 border border-stone-200 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-400 focus:bg-white transition-colors pl-9"
+                />
+                <Search className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-2.5 text-stone-400 hover:text-stone-600 p-0.5"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              <span className="text-xs text-stone-500 font-medium whitespace-nowrap">
+                {filteredPortfolios.length} {filteredPortfolios.length === 1 ? 'Portfolio' : 'Portfolios'}
+              </span>
+            </div>
+
+            {/* Portfolios Grid */}
+            {filteredPortfolios.length === 0 ? (
+              <div className="bg-white border border-stone-200/80 rounded-2xl p-12 text-center shadow-2xs max-w-lg mx-auto">
+                <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center mx-auto mb-3">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-bold text-stone-900 mb-1">No Creator Portfolios Found</h3>
+                <p className="text-xs text-stone-500 mb-6">
+                  {searchQuery
+                    ? `No portfolios matching "${searchQuery}".`
+                    : 'Get started by creating your first digital showcase with AI auto-fill.'}
+                </p>
+                <Link
+                  to="/portfolio/create"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold shadow-xs"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create First Portfolio</span>
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {filteredPortfolios.map((portfolio) => (
+                  <div
+                    key={portfolio.id}
+                    className="bg-white border border-stone-200/80 hover:border-stone-300 rounded-2xl p-5 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between"
+                  >
+                    <div>
+                      {/* Header Avatar & Name */}
+                      <div className="flex items-start justify-between gap-3 mb-4">
+                        <div className="flex items-center gap-3">
+                          {portfolio.identity.profilePhoto ? (
+                            <img
+                              src={portfolio.identity.profilePhoto}
+                              alt={portfolio.identity.name}
+                              className="w-12 h-12 rounded-xl object-cover border border-stone-200 bg-stone-100 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-xl bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-700 font-bold text-base shrink-0">
+                              {portfolio.identity.name?.charAt(0) || 'C'}
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="font-bold text-stone-900 text-base leading-tight">
+                              {portfolio.identity.name}
+                            </h3>
+                            <span className="text-xs text-stone-500 font-medium block mt-0.5">
+                              {portfolio.identity.niche}
+                            </span>
+                          </div>
+                        </div>
+
+                        <span
+                          className={`text-[10px] font-semibold uppercase px-2.5 py-1 rounded-full ${
+                            portfolio.status === 'published'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-stone-100 text-stone-600 border border-stone-200'
+                          }`}
+                        >
+                          {portfolio.status}
+                        </span>
+                      </div>
+
+                      {/* Tagline / Bio */}
+                      {portfolio.identity.tagline && (
+                        <p className="text-xs text-stone-600 line-clamp-2 mb-3 leading-relaxed">
+                          {portfolio.identity.tagline}
+                        </p>
+                      )}
+
+                      {/* Stats Pills */}
+                      <div className="flex flex-wrap items-center gap-2 mb-4 pt-2 border-t border-stone-100">
+                        <span className="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-stone-50 border border-stone-200/80 text-stone-600">
+                          {portfolio.content?.services?.length || 0} Services
+                        </span>
+                        <span className="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-stone-50 border border-stone-200/80 text-stone-600">
+                          {portfolio.content?.projects?.length || 0} Projects
+                        </span>
+                        {portfolio.identity.location && (
+                          <span className="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-stone-50 border border-stone-200/80 text-stone-600 flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-stone-400" />
+                            <span className="truncate max-w-[100px]">{portfolio.identity.location}</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Actions Bar */}
+                    <div className="pt-3 border-t border-stone-100 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <Link
+                          to={`/portfolio/${portfolio.slug}`}
+                          target="_blank"
+                          className="p-2 rounded-xl bg-stone-50 hover:bg-stone-100 border border-stone-200 text-stone-600 hover:text-stone-900 transition-colors"
+                          title="View Live Portfolio"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => copyPortfolioUrl(portfolio.slug, portfolio.id)}
+                          className="p-2 rounded-xl bg-stone-50 hover:bg-stone-100 border border-stone-200 text-stone-600 hover:text-stone-900 transition-colors"
+                          title="Copy Public Link"
+                        >
+                          {copiedId === portfolio.id ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                        <Link
+                          to={`/portfolio/edit/${portfolio.id}`}
+                          className="p-2 rounded-xl bg-stone-50 hover:bg-stone-100 border border-stone-200 text-stone-600 hover:text-stone-900 transition-colors"
+                          title="Edit Portfolio"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setPortfolioToDelete(portfolio)}
+                        className="p-2 rounded-xl hover:bg-rose-50 text-stone-400 hover:text-rose-600 transition-colors"
+                        title="Delete Portfolio"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Portfolio Delete Confirmation Modal */}
+            {portfolioToDelete && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-xs animate-in fade-in duration-200">
+                <div className="bg-white border border-stone-200 rounded-2xl p-6 max-w-md w-full shadow-xl space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-600">
+                      <Trash2 className="w-5 h-5" />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => !isDeletingPortfolio && setPortfolioToDelete(null)}
+                      className="text-stone-400 hover:text-stone-600 p-1 rounded-lg transition-colors"
+                      disabled={isDeletingPortfolio}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-semibold text-stone-900">Delete Creator Portfolio</h3>
+                    <p className="text-xs text-stone-500 leading-relaxed">
+                      Are you sure you want to delete {portfolioToDelete.identity.name}'s portfolio? This action cannot be undone.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2.5 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setPortfolioToDelete(null)}
+                      disabled={isDeletingPortfolio}
+                      className="px-4 py-2 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 text-xs font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={confirmDeletePortfolio}
+                      disabled={isDeletingPortfolio}
+                      className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-2xs inline-flex items-center gap-1.5"
+                    >
+                      {isDeletingPortfolio ? 'Deleting...' : 'Delete Portfolio'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* =========================================================================
+            VIEW 2: PROPERTY LISTINGS TAB (ORIGINAL LISTING OS ENGINE)
+            ========================================================================= */}
+        {activeTab === 'listings' && (
+          <div className="space-y-6">
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
           <div>
@@ -707,6 +1074,9 @@ export const AdminDashboardPage: React.FC = () => {
               </div>
             </div>
           </div>
+        )}
+
+        </div>
         )}
       </div>
     </AdminLayout>

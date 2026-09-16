@@ -47,6 +47,7 @@ export interface PropertyImage {
 }
 
 export * from './intelligence';
+export * from './portfolio';
 
 export interface PropertyListing {
   id: string;
@@ -66,6 +67,10 @@ export interface PropertyListing {
   seoTitle?: string;
   metaDescription?: string;
   intelligence?: import('./intelligence').PropertyIntelligenceData;
+  walkthroughVideoUrl?: string;
+  walkthroughVideoType?: string;
+  walkthroughVideoThumbnail?: string;
+  previousSlugs?: string[];
   createdAt: string;
   updatedAt: string;
 }

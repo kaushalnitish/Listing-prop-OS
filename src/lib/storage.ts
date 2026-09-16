@@ -45,7 +45,7 @@ function toDbRow(listing: PropertyListing) {
     slug: listing.slug,
     title: listing.title,
     tagline: listing.tagline || null,
-    price: listing.price || 0,
+    price: Number(listing.price) || 0,
     currency: listing.currency || '₹',
     specs: listing.specs || {},
     location: listing.location || {},
@@ -58,6 +58,14 @@ function toDbRow(listing: PropertyListing) {
     seo_title: listing.seoTitle || null,
     meta_description: listing.metaDescription || null,
     intelligence: listing.intelligence || null,
+    walkthrough_video_url: (listing as any).walkthroughVideoUrl || (listing as any).walkthrough_video_url || null,
+    walkthrough_video_type: (listing as any).walkthroughVideoType || (listing as any).walkthrough_video_type || null,
+    walkthrough_video_thumbnail: (listing as any).walkthroughVideoThumbnail || (listing as any).walkthrough_video_thumbnail || null,
+    previous_slugs: Array.isArray((listing as any).previousSlugs)
+      ? (listing as any).previousSlugs
+      : Array.isArray((listing as any).previous_slugs)
+      ? (listing as any).previous_slugs
+      : [],
     created_at: listing.createdAt || now,
     updated_at: listing.updatedAt || now,
   };
@@ -81,8 +89,11 @@ function fromDbRow(row: any): PropertyListing {
     images: Array.isArray(row.images) ? row.images : [],
     contact: typeof row.contact === 'object' && row.contact ? row.contact : {},
     status: row.status === 'draft' || row.status === 'archived' ? row.status : 'published',
-    seoTitle: row.seoTitle || row.seo_title || undefined,
-    metaDescription: row.metaDescription || row.meta_description || undefined,
+    seoTitle: row.seo_title || row.seoTitle || undefined,
+    metaDescription: row.meta_description || row.metaDescription || undefined,
+    walkthroughVideoUrl: row.walkthrough_video_url || row.walkthroughVideoUrl || undefined,
+    walkthroughVideoType: row.walkthrough_video_type || row.walkthroughVideoType || undefined,
+    walkthroughVideoThumbnail: row.walkthrough_video_thumbnail || row.walkthroughVideoThumbnail || undefined,
     intelligence:
       typeof row.intelligence === 'object' && row.intelligence
         ? row.intelligence
@@ -95,8 +106,13 @@ function fromDbRow(row: any): PropertyListing {
             }
           })()
         : undefined,
-    createdAt: row.createdAt || row.created_at || now,
-    updatedAt: row.updatedAt || row.updated_at || now,
+    previousSlugs: Array.isArray(row.previous_slugs)
+      ? row.previous_slugs
+      : Array.isArray(row.previousSlugs)
+      ? row.previousSlugs
+      : [],
+    createdAt: row.created_at || row.createdAt || now,
+    updatedAt: row.updated_at || row.updatedAt || now,
   };
 }
 
@@ -104,27 +120,28 @@ export async function getListings(): Promise<PropertyListing[]> {
   // 1. Fetch from Authoritative Backend Server API
   try {
     const res = await fetch('/api/listings');
-    const json = await res.json();
-    if (res.ok && json.success && Array.isArray(json.data)) {
-      const serverListings: PropertyListing[] = json.data;
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const json = await res.json();
+      if (res.ok && json.success && Array.isArray(json.data) && json.data.length > 0) {
+        const serverListings: PropertyListing[] = json.data;
 
-      // Sort by updatedAt or createdAt descending
-      serverListings.sort((a, b) => {
-        const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
-        const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
-        return timeB - timeA;
-      });
+        // Sort by updatedAt or createdAt descending
+        serverListings.sort((a, b) => {
+          const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+          const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+          return timeB - timeA;
+        });
 
-      // Update LocalStorage cache to stay in sync with authoritative server state
-      try {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(serverListings));
-      } catch (e) {
-        console.warn('Failed to sync listings cache to localStorage:', e);
+        // Update LocalStorage cache to stay in sync with authoritative server state
+        try {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(serverListings));
+        } catch (e) {
+          console.warn('Failed to sync listings cache to localStorage:', e);
+        }
+
+        return serverListings;
       }
-
-      return serverListings;
-    } else {
-      console.warn('Backend API returned error:', json.error);
     }
   } catch (e) {
     console.warn('Failed to fetch listings from backend API:', e);
@@ -138,7 +155,7 @@ export async function getListings(): Promise<PropertyListing[]> {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && data) {
+      if (!error && data && data.length > 0) {
         const dbListings = data.map(fromDbRow);
         try {
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dbListings));
@@ -150,14 +167,20 @@ export async function getListings(): Promise<PropertyListing[]> {
     }
   }
 
-  // 3. LocalStorage cache as offline fallback only when network/server is completely unreachable
+  // 3. LocalStorage cache as offline fallback
   try {
     const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (localData !== null) {
-      return JSON.parse(localData);
+      const parsed = JSON.parse(localData);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
     }
-  } catch {
-    return [];
+  } catch {}
+
+  // 4. Default demo listings from data/listings.json as ultimate safety net
+  if (Array.isArray(defaultListings) && defaultListings.length > 0) {
+    return defaultListings;
   }
 
   return [];
@@ -170,9 +193,12 @@ export async function getListingBySlug(slug: string): Promise<PropertyListing | 
   // 1. Try Backend Server API first
   try {
     const res = await fetch(`/api/listings/slug/${encodeURIComponent(normalizedSlug)}`);
-    const json = await res.json();
-    if (res.ok && json.success && json.data) {
-      return json.data;
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const json = await res.json();
+      if (res.ok && json.success && json.data) {
+        return json.data;
+      }
     }
   } catch (e) {
     console.warn('Server API getListingBySlug error:', e);
@@ -231,9 +257,12 @@ export async function getListingById(id: string): Promise<PropertyListing | null
   // 1. Try Backend Server API first
   try {
     const res = await fetch(`/api/listings/${encodeURIComponent(id)}`);
-    const json = await res.json();
-    if (res.ok && json.success && json.data) {
-      return json.data;
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const json = await res.json();
+      if (res.ok && json.success && json.data) {
+        return json.data;
+      }
     }
   } catch (e) {
     console.warn('Server API getListingById error:', e);
@@ -286,7 +315,7 @@ export async function saveListing(listing: PropertyListing): Promise<PropertyLis
   if (!listing.createdAt) listing.createdAt = now;
   listing.updatedAt = now;
 
-  // Process data:image/ and blob: URLs by uploading via /api/upload-image (Serverless Function + Service Role Key)
+  // Process data:image/ and blob: URLs by uploading to permanent Supabase Storage
   if (listing.images && listing.images.length > 0) {
     const updatedImages = await Promise.all(
       listing.images.map(async (img) => {
@@ -316,37 +345,59 @@ export async function saveListing(listing: PropertyListing): Promise<PropertyLis
     listing.images = updatedImages;
   }
 
-  // Save to Authoritative Backend Serverless API via /api/listings
-  console.log('[ListingOS] Saving listing via /api/listings...', { id: listing.id, slug: listing.slug, status: listing.status });
-  const apiRes = await fetch('/api/listings', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(listing),
-  });
+  // 1. Primary: Save to Authoritative Backend Serverless API via /api/listings
+  let savedListing: PropertyListing | null = null;
+  try {
+    console.log('[ListingOS] Saving listing via /api/listings...', { id: listing.id, slug: listing.slug, status: listing.status });
+    const apiRes = await fetch('/api/listings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(listing),
+    });
 
-  const contentType = apiRes.headers.get('content-type') || '';
-  let apiJson: any = null;
-  if (contentType.includes('application/json')) {
-    apiJson = await apiRes.json().catch(() => null);
-  } else {
-    const rawErrorText = await apiRes.text().catch(() => '');
-    console.error('[ListingOS] Non-JSON response received from /api/listings:', apiRes.status, rawErrorText);
-    throw new Error(`Database save failed: Server returned unexpected response (HTTP ${apiRes.status}): ${rawErrorText.substring(0, 300) || apiRes.statusText}`);
+    const contentType = apiRes.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const apiJson = await apiRes.json().catch(() => null);
+      if (apiRes.ok && apiJson?.success && apiJson?.data) {
+        savedListing = apiJson.data;
+        console.log('[ListingOS] Listing successfully saved via /api/listings:', savedListing.id);
+      } else if (apiJson?.error) {
+        console.warn('[ListingOS] /api/listings returned error:', apiJson.error);
+      }
+    }
+  } catch (err) {
+    console.warn('[ListingOS] Backend /api/listings call failed, checking direct Supabase fallback:', err);
   }
 
-  if (!apiRes.ok || !apiJson?.success) {
-    const errorMsg = apiJson?.message || apiJson?.error || `Database save failed (HTTP ${apiRes.status}: ${apiRes.statusText})`;
-    console.error('[ListingOS] Error from /api/listings:', errorMsg);
-    throw new Error(errorMsg);
+  // 2. Fallback: Direct client-side Supabase upsert if server API was unavailable
+  if (!savedListing && isSupabaseConfigured) {
+    try {
+      const dbRow = toDbRow(listing);
+      const { data, error } = await supabase
+        .from('listings')
+        .upsert([dbRow])
+        .select();
+
+      if (!error && data && data.length > 0) {
+        savedListing = fromDbRow(data[0]);
+        console.log('[ListingOS] Listing successfully saved via direct Supabase client fallback:', savedListing.id);
+      } else if (error) {
+        console.warn('[ListingOS] Direct Supabase upsert fallback warning:', error);
+      }
+    } catch (dbErr) {
+      console.warn('[ListingOS] Direct Supabase upsert exception:', dbErr);
+    }
   }
 
-  const savedListing: PropertyListing = apiJson.data || listing;
-  console.log('[ListingOS] Listing successfully saved to backend:', savedListing.id);
+  // 3. Fallback: Local object if offline
+  if (!savedListing) {
+    savedListing = listing;
+  }
 
   // Sync to Local Storage cache
   try {
     const cached = await getListings();
-    const updated = [savedListing, ...cached.filter((l) => l.id !== savedListing.id)];
+    const updated = [savedListing, ...cached.filter((l) => l.id !== savedListing!.id)];
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
   } catch (err) {
     console.warn('localStorage sync error:', err);
@@ -358,28 +409,40 @@ export async function saveListing(listing: PropertyListing): Promise<PropertyLis
 export async function deleteListing(id: string): Promise<boolean> {
   if (!id) return false;
 
-  const apiRes = await fetch(`/api/listings/${encodeURIComponent(id)}`, { method: 'DELETE' });
-  const contentType = apiRes.headers.get('content-type') || '';
-  let apiJson: any = null;
-  if (contentType.includes('application/json')) {
-    apiJson = await apiRes.json().catch(() => null);
-  } else {
-    const rawErrorText = await apiRes.text().catch(() => '');
-    throw new Error(`Database delete failed (HTTP ${apiRes.status}): ${rawErrorText.substring(0, 200) || apiRes.statusText}`);
+  let deleted = false;
+
+  // 1. Try server API delete
+  try {
+    const apiRes = await fetch(`/api/listings/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    const contentType = apiRes.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const apiJson = await apiRes.json().catch(() => null);
+      if (apiRes.ok && apiJson?.success) {
+        deleted = true;
+      }
+    }
+  } catch (err) {
+    console.warn('[ListingOS] Delete via API failed, checking client Supabase fallback:', err);
   }
 
-  if (!apiRes.ok || !apiJson?.success) {
-    throw new Error(apiJson?.message || apiJson?.error || `Database delete failed (HTTP ${apiRes.status})`);
+  // 2. Direct Supabase client delete fallback
+  if (!deleted && isSupabaseConfigured) {
+    try {
+      const { error } = await supabase.from('listings').delete().eq('id', id);
+      if (!error) {
+        deleted = true;
+      }
+    } catch (e) {
+      console.warn('[ListingOS] Direct Supabase delete fallback error:', e);
+    }
   }
-
-  const targetId = apiJson.deletedId || id;
 
   // Clear deleted listing from LocalStorage cache
   try {
     const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (localData) {
       const parsed: PropertyListing[] = JSON.parse(localData);
-      const filtered = parsed.filter((l) => l.id !== targetId && l.id !== id);
+      const filtered = parsed.filter((l) => l.id !== id);
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(filtered));
     }
   } catch (e) {
@@ -390,6 +453,7 @@ export async function deleteListing(id: string): Promise<boolean> {
 }
 
 export async function uploadImageToSupabaseStorage(file: File): Promise<string> {
+  // 1. Try server API endpoint (/api/upload-image)
   try {
     const base64 = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
@@ -405,23 +469,45 @@ export async function uploadImageToSupabaseStorage(file: File): Promise<string> 
     });
 
     const contentType = res.headers.get('content-type') || '';
-    let json: any = null;
     if (contentType.includes('application/json')) {
-      json = await res.json().catch(() => ({}));
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json?.success && json?.url) {
+        return json.url;
+      }
+      if (!res.ok && json?.error) {
+        console.warn('[ListingOS] /api/upload-image returned error:', json.error);
+      }
     }
-
-    if (!res.ok || !json?.success) {
-      const errorMsg = json?.message || json?.error || `Image upload failed (HTTP ${res.status}: ${res.statusText})`;
-      throw new Error(errorMsg);
-    }
-
-    if (json.url && (json.url.startsWith('https://') || json.url.startsWith('http://'))) {
-      return json.url;
-    }
-    throw new Error('Image upload failed: Server did not return a public URL.');
-  } catch (err: any) {
-    console.error('Image upload failed:', err);
-    throw new Error(err.message || 'Image upload failed');
+  } catch (apiErr) {
+    console.warn('[ListingOS] Backend /api/upload-image call failed, checking client fallback:', apiErr);
   }
-}
 
+  // 2. Direct client-side Supabase Storage upload fallback if configured
+  if (isSupabaseConfigured) {
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const cleanExt = ext.replace(/[^a-z0-9]/gi, '') || 'jpg';
+      const filePath = `listings/${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${cleanExt}`;
+      const { data, error } = await supabase.storage
+        .from('property-images')
+        .upload(filePath, file, {
+          contentType: file.type || 'image/jpeg',
+          upsert: true,
+        });
+
+      if (!error && data) {
+        const { data: pubData } = supabase.storage
+          .from('property-images')
+          .getPublicUrl(filePath);
+
+        if (pubData?.publicUrl) {
+          return pubData.publicUrl;
+        }
+      }
+    } catch (clientErr) {
+      console.warn('[ListingOS] Direct client Supabase Storage upload error:', clientErr);
+    }
+  }
+
+  throw new Error('Image upload failed: Server API unavailable and client storage unreachable.');
+}

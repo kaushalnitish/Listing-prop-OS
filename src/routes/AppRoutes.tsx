@@ -7,18 +7,36 @@ import { PublicListingPage } from '../pages/public/PublicListingPage';
 import { PrivateAccessPage } from '../pages/auth/PrivateAccessPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
+import { ServiceSelectionPage } from '../pages/ServiceSelectionPage';
+import { CreatePortfolioPage } from '../pages/admin/CreatePortfolioPage';
+import { EditPortfolioPage } from '../pages/admin/EditPortfolioPage';
+import { PublicPortfolioPage } from '../pages/public/PublicPortfolioPage';
 
 export const AppRoutes: React.FC = () => {
   return (
     <Routes>
+      {/* =========================================================================
+          PART 0 — UNIFIED SERVICE SELECTION HUB
+          "What do you want to create? Listing OS or Creator Portfolio"
+          ========================================================================= */}
+      <Route path="/" element={<ServiceSelectionPage />} />
+      <Route path="/select" element={<ServiceSelectionPage />} />
+      <Route path="/hub" element={<ServiceSelectionPage />} />
+
+      {/* =========================================================================
+          PART 1 — PUBLIC CREATOR PORTFOLIO PAGES (100% PUBLIC 🌍)
+          ========================================================================= */}
+      <Route path="/portfolio/:slug" element={<PublicPortfolioPage />} />
+      <Route path="/p/portfolio/:slug" element={<PublicPortfolioPage />} />
+      <Route path="/creator/:slug" element={<PublicPortfolioPage />} />
+      <Route path="/sample-portfolio" element={<PublicPortfolioPage />} />
+
       {/* =========================================================================
           PART 2 — PUBLIC PROPERTY LISTING PAGES (100% PUBLIC 🌍)
           - NO PASSWORD
           - NO LOGIN
           - NO ACCESS GATE
           - NO REDIRECT
-          Anyone with this link (clients, buyers, WhatsApp, Instagram, incognito)
-          sees the property page immediately.
           ========================================================================= */}
       <Route path="/p/:slug" element={<PublicListingPage />} />
       <Route path="/property/:slug" element={<PublicListingPage />} />
@@ -32,20 +50,10 @@ export const AppRoutes: React.FC = () => {
       <Route path="/admin/login" element={<PrivateAccessPage />} />
 
       {/* =========================================================================
-          PART 1 — PRIVATE WEBSITE & MANAGEMENT SYSTEM (LOCKED 🔒)
+          PART 3 — UNIFIED ADMIN DASHBOARD & MANAGEMENT (LOCKED 🔒)
           Passcode: 9736648956
           Protected routes require passcode authentication.
           ========================================================================= */}
-      {/* Root Homepage - LOCKED */}
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <AdminDashboardPage />
-          </ProtectedRoute>
-        }
-      />
-
       {/* Dashboard Routes - LOCKED */}
       <Route
         path="/admin"
@@ -72,7 +80,41 @@ export const AppRoutes: React.FC = () => {
         }
       />
 
-      {/* Create Listing Routes - LOCKED */}
+      {/* Creator Portfolio Management Routes - LOCKED */}
+      <Route
+        path="/portfolio/create"
+        element={
+          <ProtectedRoute>
+            <CreatePortfolioPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/portfolio/new"
+        element={
+          <ProtectedRoute>
+            <CreatePortfolioPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/portfolio/edit/:id"
+        element={
+          <ProtectedRoute>
+            <EditPortfolioPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/portfolio/edit/:id"
+        element={
+          <ProtectedRoute>
+            <EditPortfolioPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Property Listing Creation Routes - LOCKED */}
       <Route
         path="/create"
         element={
@@ -122,7 +164,7 @@ export const AppRoutes: React.FC = () => {
         }
       />
 
-      {/* Edit & Management Routes - LOCKED */}
+      {/* Property Listing Edit & Management Routes - LOCKED */}
       <Route
         path="/edit/:id"
         element={

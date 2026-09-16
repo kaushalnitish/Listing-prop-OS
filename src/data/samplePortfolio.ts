@@ -1,0 +1,248 @@
+import { CreatorProfile } from '../types';
+
+export const SAMPLE_CREATOR_PORTFOLIO: CreatorProfile = {
+  id: 'portfolio-sample-rishika-kapoor',
+  slug: 'rishika-kapoor',
+  status: 'published',
+  templateId: 'default',
+  identity: {
+    name: 'Rishika Kapoor',
+    tagline: 'Visual Director & Luxury Editorial Photographer',
+    profilePhoto: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
+    niche: 'Fashion & Visual Direction',
+    bio: 'Crafting evocative visual identities, editorial campaigns, and cinematic brand narratives for luxury lifestyle and fashion houses across Mumbai, Paris, and London.',
+    location: 'Mumbai & London',
+  },
+  contact: {
+    email: 'studio@rishikakapoor.com',
+    phone: '+91 98200 44219',
+    whatsappNumber: '919820044219',
+    website: 'https://rishikakapoor.com',
+    bookingUrl: 'https://cal.com/rishikakapoor/creative-consultation',
+  },
+  socialLinks: {
+    instagram: 'https://instagram.com/rishikakapoor',
+    youtube: 'https://youtube.com/@rishikakapoorstudios',
+    tiktok: 'https://tiktok.com/@rishikakapoor',
+    linkedin: 'https://linkedin.com/in/rishikakapoor',
+    behance: 'https://behance.net/rishikakapoor',
+  },
+  content: {
+    about:
+      'With over 8 years of directing high-impact visual campaigns, my work sits at the intersection of classical portraiture and modern digital surrealism. I collaborate directly with visionary founders, global editorial desks, and haute couture labels to translate tactile texture into digital resonance.',
+    services: [
+      {
+        id: 'srv-1',
+        title: 'Editorial & Lookbook Direction',
+        description: 'End-to-end creative direction, casting, location scouting, and lighting architecture for seasonal runway and retail launches.',
+        price: 'From $4,500',
+        deliveryTime: '2-3 Weeks',
+        tags: ['Fashion', 'Editorial', 'Production'],
+      },
+      {
+        id: 'srv-2',
+        title: 'Brand Visual Identity & Rebranding',
+        description: 'Holistic visual systems, palette development, typographic hierarchy, and brand imagery guidelines for luxury brands.',
+        price: 'From $6,000',
+        deliveryTime: '4 Weeks',
+        tags: ['Art Direction', 'Identity', 'Strategy'],
+      },
+      {
+        id: 'srv-3',
+        title: 'Cinematic Micro-Films & Social Campaigns',
+        description: 'Short-form 4K vertical film capsules tailored for Instagram Reels, digital billboards, and omnichannel activations.',
+        price: 'From $3,200',
+        deliveryTime: '1-2 Weeks',
+        tags: ['Motion', 'Cinematography', 'Social'],
+      },
+    ],
+    skills: [
+      'Art Direction',
+      'Editorial Photography',
+      'Color Grading',
+      'Studio Lighting',
+      'Casting & Styling',
+      'Hasselblad / Medium Format',
+      'Post-Production & Retouching',
+      'Creative Strategy',
+    ],
+    experience: [
+      {
+        id: 'exp-1',
+        role: 'Lead Visual Director',
+        company: 'Vogue India & Condé Nast',
+        period: '2023 – Present',
+        description: 'Directing monthly cover stories and digital feature spreads for premier fashion editions.',
+      },
+      {
+        id: 'exp-2',
+        role: 'Senior Campaign Photographer',
+        company: 'Atelier Noir Studio (London)',
+        period: '2020 – 2023',
+        description: 'Executed high-jewelry and couture campaigns for international luxury houses.',
+      },
+      {
+        id: 'exp-3',
+        role: 'Independent Visual Artist',
+        company: 'Self-Employed',
+        period: '2017 – 2020',
+        description: 'Exhibited solo photography series in Milan, Tokyo, and Mumbai.',
+      },
+    ],
+    projects: [
+      {
+        id: 'proj-1',
+        title: 'Aura of Silence: Winter Couture',
+        subtitle: 'Editorial Lookbook for House of Valérie',
+        description: 'A minimalist exploration of architectural tailoring against raw Brutalist concrete spaces in Zurich.',
+        coverImage: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1200&q=80',
+        link: 'https://behance.net',
+        tags: ['Haute Couture', 'Lookbook', 'Film'],
+        year: '2025',
+        client: 'House of Valérie',
+      },
+      {
+        id: 'proj-2',
+        title: 'Solstice Light: High Jewelry Capsule',
+        subtitle: 'Global Campaign for Lumina Paris',
+        description: 'Capturing diamond refraction and subtle golden hour luminance using natural prisms and optical glass.',
+        coverImage: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1200&q=80',
+        link: 'https://behance.net',
+        tags: ['Jewelry', 'Macro', 'Luxury'],
+        year: '2024',
+        client: 'Lumina Paris',
+      },
+      {
+        id: 'proj-3',
+        title: 'Desert Mirage: Monolith Series',
+        subtitle: 'Commercial Brand Narrative for Nomad Atelier',
+        description: 'Shot on location across the sand dunes of Jaisalmer, celebrating handwoven raw silk and earthy indigo dyes.',
+        coverImage: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80',
+        link: 'https://behance.net',
+        tags: ['Textile', 'Location Shoot', 'Desert'],
+        year: '2024',
+        client: 'Nomad Atelier',
+      },
+      {
+        id: 'proj-4',
+        title: 'Neo-Sari: Reimagined Drapes',
+        subtitle: 'Digital Museum Installation Series',
+        description: 'Documenting modern interpretations of century-old weaves through high-speed stroboscopic motion.',
+        coverImage: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=1200&q=80',
+        tags: ['Cultural Archive', 'Exhibition', 'Art'],
+        year: '2023',
+        client: 'Kala Ghoda Arts Trust',
+      },
+    ],
+    achievements: [
+      {
+        id: 'ach-1',
+        title: 'Harper\'s Bazaar Emerging Voice Award',
+        detail: 'Recognized for innovative visual framing in contemporary South Asian fashion.',
+        year: '2024',
+      },
+      {
+        id: 'ach-2',
+        title: 'PX3 Prix de la Photographie Paris — Gold',
+        detail: '1st Place in Fine Art / Advertising Editorial category.',
+        year: '2023',
+      },
+      {
+        id: 'ach-3',
+        title: 'Over 120M Organic Social Impressions',
+        detail: 'Directed viral campaign films featured globally across TikTok and Instagram.',
+        year: '2024',
+      },
+    ],
+    testimonials: [
+      {
+        id: 'test-1',
+        quote:
+          'Rishika possesses that exceedingly rare gift of turning an abstract moodboard into an unforgettable editorial reality. Her eye for light and composition redefined our brand.',
+        clientName: 'Valérie de Saint-Germain',
+        clientRole: 'Founder & Creative Director',
+        clientCompany: 'House of Valérie (Paris)',
+        avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80',
+      },
+      {
+        id: 'test-2',
+        quote:
+          'Working with Rishika was the smoothest production experience of my career. The campaign exceeded our retail sell-through targets within the first 48 hours.',
+        clientName: 'Arjun Singhania',
+        clientRole: 'Managing Partner',
+        clientCompany: 'Lumina Luxury Group',
+        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+      },
+    ],
+    process: [
+      {
+        id: 'proc-1',
+        step: 1,
+        title: 'Creative Consultation & Discovery',
+        description: 'Aligning on core brand DNA, audience psychology, moodboard curation, and narrative objectives.',
+      },
+      {
+        id: 'proc-2',
+        step: 2,
+        title: 'Production Design & Pre-Visualization',
+        description: 'Comprehensive call sheets, location scouting, talent casting, and lighting test diagrams.',
+      },
+      {
+        id: 'proc-3',
+        step: 3,
+        title: 'Execution & Set Direction',
+        description: 'Shooting tethered with real-time digital monitoring and collaborative client review on set.',
+      },
+      {
+        id: 'proc-4',
+        step: 4,
+        title: 'Bespoke Color Grading & Delivery',
+        description: 'Precision retouching, print-ready color profiles, and multi-format web-optimized assets delivered in 4K.',
+      },
+    ],
+    upcomingWork: [
+      'Milan Fashion Week SS27 Capsule Series',
+      'Art Monograph: "Shadows in White Marble" (Releasing Q3 2026)',
+    ],
+  },
+  media: {
+    profileImages: [
+      {
+        id: 'med-1',
+        url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
+        caption: 'Studio Portrait',
+        category: 'profile',
+        isPrimary: true,
+      },
+    ],
+    projectImages: [
+      {
+        id: 'med-2',
+        url: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1200&q=80',
+        caption: 'Aura of Silence',
+        category: 'project',
+      },
+      {
+        id: 'med-3',
+        url: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1200&q=80',
+        caption: 'Solstice Light',
+        category: 'project',
+      },
+      {
+        id: 'med-4',
+        url: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80',
+        caption: 'Desert Mirage',
+        category: 'project',
+      },
+    ],
+  },
+  seo: {
+    title: 'Rishika Kapoor | Visual Director & Luxury Editorial Photographer',
+    metaDescription: 'Official portfolio of Rishika Kapoor. Visual director and luxury fashion photographer based in Mumbai and London.',
+    ogImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1200&q=80',
+  },
+  createdAt: '2026-08-15T10:00:00.000Z',
+  updatedAt: '2026-08-15T10:00:00.000Z',
+};
+
+export const SAMPLE_PORTFOLIOS: CreatorProfile[] = [SAMPLE_CREATOR_PORTFOLIO];

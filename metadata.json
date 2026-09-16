@@ -1,6 +1,6 @@
 {
   "name": "Listing OS",
-  "description": "Listing OS - Modern real estate listing engine and property showcase platform.",
+  "description": "Unified platform for Luxury Property Listings and Creator Portfolios.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

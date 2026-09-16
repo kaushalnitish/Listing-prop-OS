@@ -830,7 +830,7 @@ Include:
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
+      model: "gemini-3.8-flash",
       contents: userInstructions,
       config: {
         systemInstruction:
@@ -907,7 +907,7 @@ INSTRUCTIONS & CONVERSIONS:
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
+      model: "gemini-3.8-flash",
       contents: prompt,
       config: {
         systemInstruction:
@@ -987,7 +987,7 @@ Generate factual, high-value real estate intelligence structured as JSON:
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
+      model: "gemini-3.8-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",

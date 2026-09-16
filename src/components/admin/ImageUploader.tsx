@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PropertyImage } from '../../types';
 import { compressImage } from '../../lib/imageCompression';
 import { uploadImageToSupabaseStorage } from '../../lib/storage';
+import { StorageDiagnosticModal } from './StorageDiagnosticModal';
 import {
   autoOrganizeImages,
   detectCategory,
@@ -20,6 +21,10 @@ import {
   Sparkles,
   Wand2,
   Tag,
+  Cloud,
+  CheckCircle2,
+  AlertTriangle,
+  HelpCircle,
 } from 'lucide-react';
 
 interface ImageUploaderProps {
@@ -63,7 +68,29 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 }) => {
   const [compressing, setCompressing] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [isDiagnosticOpen, setIsDiagnosticOpen] = useState(false);
+  const [cloudStatus, setCloudStatus] = useState<{
+    isConfigured: boolean;
+    isOnline: boolean;
+    checked: boolean;
+  }>({ isConfigured: false, isOnline: false, checked: false });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Check cloud configuration status
+    fetch('/api/config')
+      .then((res) => res.json())
+      .then((data) => {
+        setCloudStatus({
+          isConfigured: Boolean(data?.isConfigured && data?.hasServiceRoleKey),
+          isOnline: Boolean(data?.isOnline),
+          checked: true,
+        });
+      })
+      .catch(() => {
+        setCloudStatus({ isConfigured: false, isOnline: false, checked: true });
+      });
+  }, []);
 
   const processFiles = async (fileList: FileList | File[]) => {
     const filesArray = Array.from(fileList);
@@ -89,10 +116,16 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         try {
           permanentUrl = await uploadImageToSupabaseStorage(file);
         } catch (uploadErr: any) {
-          const errMsg = uploadErr?.message || String(uploadErr);
-          console.error('Upload error for file:', file.name, uploadErr);
-          alert(`Failed to upload ${file.name}: ${errMsg}`);
-          continue;
+          console.warn('Fallback to local compressed image for:', file.name, uploadErr);
+          try {
+            permanentUrl = await compressImage(file, { maxWidth: 1920, maxHeight: 1200, quality: 0.82 });
+          } catch {
+            permanentUrl = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.readAsDataURL(file);
+            });
+          }
         }
 
         const category = detectCategory(file.name);
@@ -112,8 +145,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       const organized = autoOrganizeImages([...images, ...newImages]);
       onChange(organized);
     } catch (error) {
-      console.error('Error compressing image:', error);
-      alert('Failed to process one or more images.');
+      console.error('Error processing images:', error);
     } finally {
       setCompressing(false);
     }
@@ -199,6 +231,37 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Cloud Storage Status Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 px-3.5 rounded-xl bg-zinc-950/70 border border-zinc-800/80 text-xs">
+        <div className="flex items-center gap-2">
+          {cloudStatus.isConfigured ? (
+            <>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-emerald-400 font-medium text-[11px] flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Supabase Cloud Storage Connected
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="w-2 h-2 rounded-full bg-amber-400" />
+              <span className="text-zinc-300 text-[11px]">
+                <strong className="text-amber-400">Local Draft Mode:</strong> Photos are safely compressed & saved in browser.
+              </span>
+            </>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setIsDiagnosticOpen(true)}
+          className="text-[11px] text-amber-400 hover:text-amber-300 underline font-medium flex items-center gap-1 transition-colors"
+        >
+          <Cloud className="w-3.5 h-3.5" />
+          <span>Netlify Setup Guide & Diagnostic</span>
+        </button>
+      </div>
+
       {/* Upload Zone */}
       <div
         onDragOver={(e) => {
@@ -389,6 +452,11 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           ))}
         </div>
       )}
+      {/* Storage Diagnostic & Setup Modal */}
+      <StorageDiagnosticModal
+        isOpen={isDiagnosticOpen}
+        onClose={() => setIsDiagnosticOpen(false)}
+      />
     </div>
   );
 };

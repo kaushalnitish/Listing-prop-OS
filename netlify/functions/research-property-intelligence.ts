@@ -30,7 +30,7 @@ export const handler = async (event: any) => {
       };
     }
 
-    const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+    const apiKey = (process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || "").trim().replace(/^["']|["']$/g, "");
     if (!apiKey) {
       return {
         statusCode: 500,
@@ -82,7 +82,7 @@ SEARCH DIRECTIVES:
     try {
       // Phase 1: Attempt Gemini with Google Search Grounding
       const researchResponse = await ai.models.generateContent({
-        model: "gemini-3.8-flash",
+        model: "gemini-2.5-flash",
         contents: researchPrompt,
         config: {
           tools: [{ googleSearch: {} }],
@@ -105,7 +105,7 @@ SEARCH DIRECTIVES:
       console.warn("Search Grounding attempt failed, falling back to direct analysis:", groundingError?.message);
       // Resilient fallback without tools if grounding fails or service unavailable
       const fallbackResponse = await ai.models.generateContent({
-        model: "gemini-3.8-flash",
+        model: "gemini-2.5-flash",
         contents: researchPrompt,
         config: {
           systemInstruction: "You are a professional real estate research intelligence engine. Provide deep, accurate market insights and estimations for the property micro-market.",
@@ -132,7 +132,7 @@ Ensure all metrics are realistic, localized, and mathematically consistent.
 `;
 
     const structuredResult = await ai.models.generateContent({
-      model: "gemini-3.8-flash",
+      model: "gemini-2.5-flash",
       contents: structuringPrompt,
       config: {
         systemInstruction: "You are an analytical real estate intelligence engine. Convert research into strict, validated JSON matching the requested structure.",

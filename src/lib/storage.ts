@@ -1,5 +1,6 @@
 import { PropertyListing } from '../types';
-import { supabase, isSupabaseConfigured } from './supabase';
+import { supabase, isSupabaseConfigured, ensureSupabaseClient } from './supabase';
+import { compressImage } from './imageCompression';
 import defaultListingsData from '../../data/listings.json';
 import {
   SAMPLE_PROPERTY_LISTING,
@@ -335,8 +336,9 @@ export async function saveListing(listing: PropertyListing): Promise<PropertyLis
               return { ...img, url: uploadedUrl };
             }
           } catch (e: any) {
-            console.error('Failed to upload image:', e);
-            throw new Error(`Image upload failed for photo "${img.caption || 'Property Image'}": ${e?.message || e}`);
+            console.warn('[ListingOS] Image upload during save skipped/retained:', e?.message || e);
+            // Retain the current image so the listing save is never blocked
+            return img;
           }
         }
         return img;
@@ -453,19 +455,31 @@ export async function deleteListing(id: string): Promise<boolean> {
 }
 
 export async function uploadImageToSupabaseStorage(file: File): Promise<string> {
-  // 1. Try server API endpoint (/api/upload-image)
+  // 0. Pre-compress image client-side to ensure it stays well under Netlify's 6MB payload limit
+  let optimizedDataUrl: string;
   try {
-    const base64 = await new Promise<string>((resolve, reject) => {
+    optimizedDataUrl = await compressImage(file, {
+      maxWidth: 1920,
+      maxHeight: 1200,
+      quality: 0.82,
+      mimeType: 'image/jpeg',
+    });
+  } catch (compErr) {
+    console.warn('[ListingOS] Image compression fallback to FileReader:', compErr);
+    optimizedDataUrl = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+  }
 
+  // 1. Try server API endpoint (/api/upload-image)
+  try {
     const res = await fetch('/api/upload-image', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: base64, name: file.name }),
+      body: JSON.stringify({ image: optimizedDataUrl, name: file.name }),
     });
 
     const contentType = res.headers.get('content-type') || '';
@@ -474,8 +488,8 @@ export async function uploadImageToSupabaseStorage(file: File): Promise<string> 
       if (res.ok && json?.success && json?.url) {
         return json.url;
       }
-      if (!res.ok && json?.error) {
-        console.warn('[ListingOS] /api/upload-image returned error:', json.error);
+      if (json?.message || json?.error) {
+        console.warn('[ListingOS] /api/upload-image returned note:', json.message || json.error);
       }
     }
   } catch (apiErr) {
@@ -483,31 +497,52 @@ export async function uploadImageToSupabaseStorage(file: File): Promise<string> 
   }
 
   // 2. Direct client-side Supabase Storage upload fallback if configured
-  if (isSupabaseConfigured) {
-    try {
+  try {
+    const client = await ensureSupabaseClient();
+    if (client && isSupabaseConfigured) {
       const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
       const cleanExt = ext.replace(/[^a-z0-9]/gi, '') || 'jpg';
       const filePath = `listings/${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${cleanExt}`;
-      const { data, error } = await supabase.storage
+
+      const blobRes = await fetch(optimizedDataUrl);
+      const uploadBlob = await blobRes.blob();
+
+      const { data, error } = await client.storage
         .from('property-images')
-        .upload(filePath, file, {
-          contentType: file.type || 'image/jpeg',
+        .upload(filePath, uploadBlob, {
+          contentType: uploadBlob.type || 'image/jpeg',
           upsert: true,
         });
 
       if (!error && data) {
-        const { data: pubData } = supabase.storage
+        const { data: pubData } = client.storage
           .from('property-images')
           .getPublicUrl(filePath);
 
         if (pubData?.publicUrl) {
           return pubData.publicUrl;
         }
+      } else if (error) {
+        console.warn('[ListingOS] Direct client Supabase Storage upload error:', error.message);
       }
-    } catch (clientErr) {
-      console.warn('[ListingOS] Direct client Supabase Storage upload error:', clientErr);
     }
+  } catch (clientErr) {
+    console.warn('[ListingOS] Direct client Supabase Storage upload error:', clientErr);
   }
 
-  throw new Error('Image upload failed: Server API unavailable and client storage unreachable.');
+  // 3. Resilient Local/Draft Fallback: If cloud storage is unconfigured on Netlify or unreachable,
+  // do NOT crash with an alert dialog. Retain the optimized data URL so the user can continue!
+  console.info('[ListingOS] Cloud storage not available. Using optimized compressed image directly.');
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('listingos:storage-notice', {
+        detail: {
+          type: 'local-fallback',
+          message: 'Photo stored in local draft mode. Cloud storage is not yet configured on Netlify.',
+        },
+      })
+    );
+  }
+
+  return optimizedDataUrl;
 }

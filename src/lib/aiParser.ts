@@ -1,3 +1,5 @@
+import { parseWhatsappListingHeuristic } from './heuristicParser';
+
 export interface ExtractedListingData {
   title?: string;
   tagline?: string;
@@ -23,49 +25,46 @@ export interface ExtractedListingData {
 
 export async function parsePropertyDetailsWithAi(
   rawText: string
-): Promise<{ success: boolean; data?: ExtractedListingData; error?: string }> {
+): Promise<{ success: boolean; data?: ExtractedListingData; error?: string; source?: string }> {
+  // If no text provided, return immediately
+  if (!rawText || !rawText.trim()) {
+    return { success: false, error: 'Please provide property text to parse.' };
+  }
+
   try {
+    // Attempt Netlify or Express backend parse endpoint with an 8.5s timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8500);
+
     const res = await fetch('/api/parse-whatsapp-listing', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ rawText }),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     const contentType = res.headers.get('content-type') || '';
     if (res.ok && contentType.includes('application/json')) {
       const json = await res.json();
       if (json.success && json.data) {
-        return { success: true, data: json.data };
-      }
-      if (json.error) {
-        return { success: false, error: json.error };
+        return { success: true, data: json.data, source: json.engine || 'gemini' };
       }
     }
 
-    if (!res.ok) {
-      try {
-        const errorJson = await res.json();
-        if (errorJson.error) {
-          return { success: false, error: errorJson.error };
-        }
-      } catch {
-        // Fallthrough if not valid json error
-      }
-      return {
-        success: false,
-        error: `Server responded with status ${res.status}. Please ensure the server is properly deployed with GEMINI_API_KEY.`,
-      };
-    }
-
-    return {
-      success: false,
-      error: 'Received unexpected response format from server.',
-    };
+    // If server returned non-200 (like 504 Gateway Timeout or 500), fall back gracefully to local heuristic parser
+    console.warn(`[AI Parser] Server returned status ${res.status}. Falling back to instant offline parser.`);
+    const fallbackData = parseWhatsappListingHeuristic(rawText);
+    return { success: true, data: fallbackData, source: 'smart-parser' };
   } catch (err: any) {
-    console.error('Error fetching /api/parse-whatsapp-listing:', err);
+    console.warn('[AI Parser] Network or timeout error during AI parsing. Using instant smart parser fallback:', err?.message || err);
+    // Graceful fallback to client-side smart parser - NEVER block the user with an alert!
+    const fallbackData = parseWhatsappListingHeuristic(rawText);
     return {
-      success: false,
-      error: err?.message || 'Failed to process property details. Please check connection.',
+      success: true,
+      data: fallbackData,
+      source: 'smart-parser',
     };
   }
 }

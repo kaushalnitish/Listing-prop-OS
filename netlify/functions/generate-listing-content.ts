@@ -32,7 +32,7 @@ export const handler = async (event: any) => {
       existingTitle,
     } = JSON.parse(event.body || "{}");
 
-    const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+    const apiKey = (process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || "").trim().replace(/^["']|["']$/g, "");
     if (!apiKey) {
       return {
         statusCode: 500,
@@ -72,7 +72,7 @@ Include:
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.8-flash",
+      model: "gemini-2.5-flash",
       contents: userInstructions,
       config: {
         systemInstruction:

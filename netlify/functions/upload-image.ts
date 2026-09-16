@@ -7,7 +7,15 @@ function getSupabaseAdminClient(): { client: any; error?: { status: number; code
     ""
   ).trim();
   const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
-  const serviceRoleKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+  const serviceRoleKey = (
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    ""
+  ).trim().replace(/^["']|["']$/g, '');
+  const anonKey = (
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    ""
+  ).trim().replace(/^["']|["']$/g, '');
 
   if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
     return {
@@ -15,23 +23,24 @@ function getSupabaseAdminClient(): { client: any; error?: { status: number; code
       error: {
         status: 500,
         code: "MISSING_SUPABASE_URL",
-        message: "Server configuration error: SUPABASE_URL environment variable is missing on Netlify.",
+        message: "Server configuration error: SUPABASE_URL environment variable is missing in Netlify Site settings.",
       },
     };
   }
 
-  if (!serviceRoleKey) {
+  const authKey = serviceRoleKey || anonKey;
+  if (!authKey) {
     return {
       client: null,
       error: {
         status: 500,
         code: "MISSING_SERVICE_ROLE_KEY",
-        message: "Server configuration error: SUPABASE_SERVICE_ROLE_KEY is required for storage uploads on Netlify.",
+        message: "Server configuration error: SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY is required for storage uploads on Netlify.",
       },
     };
   }
 
-  return { client: createClient(supabaseUrl, serviceRoleKey) };
+  return { client: createClient(supabaseUrl, authKey) };
 }
 
 export const handler = async (event: any) => {

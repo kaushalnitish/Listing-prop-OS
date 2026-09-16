@@ -1796,6 +1796,35 @@ Return valid JSON with:
     }
   });
 
+  // Configuration & Diagnostic API Route
+  app.get("/api/config", async (req, res) => {
+    const isOnline = await checkSupabaseReachability();
+    const rawUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "").trim();
+    const hasServiceRoleKey = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+    const hasAnonKey = Boolean(process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY);
+    res.json({
+      success: true,
+      supabaseUrl: isOnline ? rawUrl : null,
+      isConfigured: Boolean(rawUrl && (hasServiceRoleKey || hasAnonKey)),
+      isOnline,
+      hasServiceRoleKey,
+      hasAnonKey,
+      hasBucket: isOnline,
+      storageMode: isOnline ? "supabase" : "local",
+      platform: "express",
+    });
+  });
+
+  // Health check endpoint
+  app.get("/api/health", async (req, res) => {
+    const isOnline = await checkSupabaseReachability();
+    res.json({
+      status: "ok",
+      supabaseOnline: isOnline,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   // Image Upload API Route
   app.post("/api/upload-image", async (req, res) => {
     try {

@@ -4,6 +4,7 @@ import { PropertyListing } from '../../types';
 import { PropertyIntelligenceData } from '../../types/intelligence';
 import { saveListing } from '../../lib/storage';
 import { parsePropertyDetailsWithAi, researchPropertyIntelligenceWithAi } from '../../lib/aiParser';
+import { parseWhatsappListingHeuristic } from '../../lib/heuristicParser';
 import { generatePropertyIntelligence } from '../../lib/propertyIntelligence';
 import { ImageUploader } from './ImageUploader';
 import { AmenitiesSelector } from './AmenitiesSelector';
@@ -271,11 +272,36 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({
         setMissingFields(data.missingFields || []);
         setCurrentStep(3); // Advance to Preview Step
       } else {
-        alert(result.error || 'Failed to process property details. Please try again.');
+        // Fallback safely to heuristic extraction
+        const fallback = parseWhatsappListingHeuristic(rawText);
+        if (fallback.title) setTitle(fallback.title);
+        if (fallback.tagline) setTagline(fallback.tagline);
+        if (fallback.propertyType) setPropertyType(fallback.propertyType);
+        if (fallback.currency) setCurrency(fallback.currency);
+        if (fallback.price) setPrice(fallback.price);
+        if (fallback.priceFormatted) setPriceFormatted(fallback.priceFormatted);
+        if (fallback.bedrooms) setBedrooms(fallback.bedrooms);
+        if (fallback.bathrooms) setBathrooms(fallback.bathrooms);
+        if (fallback.squareFeet) setSquareFeet(fallback.squareFeet);
+        if (fallback.areaText) setAreaText(fallback.areaText);
+        if (fallback.address) setAddress(fallback.address);
+        if (fallback.city) setCity(fallback.city);
+        if (fallback.neighborhood) setNeighborhood(fallback.neighborhood);
+        if (fallback.description) setDescription(fallback.description);
+        if (fallback.highlights) setHighlights(fallback.highlights);
+        if (fallback.amenities) setAmenities(fallback.amenities);
+        setExtractedStatus('Details extracted via Smart Parser');
+        setCurrentStep(3);
       }
     } catch (err) {
-      console.error('Property details parsing error:', err);
-      alert('Error processing property details. Please check connection.');
+      console.warn('Property details parsing error, using smart fallback:', err);
+      const fallback = parseWhatsappListingHeuristic(rawText);
+      if (fallback.title) setTitle(fallback.title);
+      if (fallback.description) setDescription(fallback.description);
+      if (fallback.highlights) setHighlights(fallback.highlights);
+      if (fallback.amenities) setAmenities(fallback.amenities);
+      setExtractedStatus('Details extracted via Smart Parser');
+      setCurrentStep(3);
     } finally {
       setParsingAi(false);
     }
